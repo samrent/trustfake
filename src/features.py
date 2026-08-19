@@ -61,6 +61,16 @@ def apply_condition(im: Image.Image, condition: str) -> Image.Image:
 
     if condition == "clean":
         return im
+    if condition == "squarecrop":
+        # GEOMETRY CONTROL. SID-Set label 1 is 100% square 1024x1024 and label 2 is 100%
+        # square, while only ~5% of real images are; a bare `width == height -> fake` rule
+        # scores 0.9785 on our test split, ABOVE the CLIP probe's 0.9289. Centre-cropping
+        # every image to square makes geometry carry zero label information by construction,
+        # so a model evaluated under this condition cannot be riding the artifact.
+        # Fit AND evaluate under the same condition or the control is just a domain shift.
+        w, h = im.size
+        k = min(w, h)
+        return im.crop(((w - k) // 2, (h - k) // 2, (w - k) // 2 + k, (h - k) // 2 + k))
     if condition.startswith("jpeg_q"):
         buf = _io.BytesIO()
         im.save(buf, "JPEG", quality=int(condition[6:]))

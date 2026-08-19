@@ -21,7 +21,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-import metrics as M
+from . import metrics as M
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PRED = ROOT / "runs" / "predictions"

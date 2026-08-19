@@ -30,7 +30,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-import metrics as M
+from . import metrics as M
 from .decode import CACHE, cache_path
 from .models import build
 from .moderation import ACTION_NAMES, actions

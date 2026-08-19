@@ -21,7 +21,7 @@ import pathlib
 
 import numpy as np
 
-import metrics as M
+from . import metrics as M
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PRED = ROOT / "runs" / "predictions"
@@ -72,6 +72,12 @@ def main() -> None:
     ap.add_argument("--pred-dir", type=pathlib.Path, default=PRED)
     a = ap.parse_args()
 
+    bl_path = ROOT / "runs" / "trivial_baselines.json"
+    bl = json.loads(bl_path.read_text()) if bl_path.exists() else None
+    if bl:
+        from .baselines import headline
+        print(headline(bl, " ".join(a.conditions)) + "\n")
+
     calib_stem = a.calib or f"predictions_{a.model}_calib_clean"
     calib = load(calib_stem, a.pred_dir)
     T = M.fit_temperature(calib["logits"], calib["y"])
@@ -110,7 +116,9 @@ def main() -> None:
         f"- provenance: SID-Set validation split, held-out slice (official test split withheld)\n"
         f"- temperature {T:.4f} fitted on `{calib_stem}` and frozen\n"
         f"- AURC/AUGRC convention: tie blocks collapsed, block-size-weighted mean over operating points\n"
-        f"- ECE column: 15 bins, equal-mass\n\n"
+        f"- ECE column: 15 bins, equal-mass\n"
+        + (f"- **{__import__('src.baselines', fromlist=['headline']).headline(bl, ' '.join(a.conditions))}**\n" if bl else "")
+        + "\n"
         f"```\n{table}\n```\n\n" + (f"> {warn}\n\n" if warn else "")
         + (f"clean, broken out by fake class:\n\n```\n{fmt(extra)}\n```\n" if extra else ""))
     (a.out.with_suffix(".json")).write_text(json.dumps(

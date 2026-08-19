@@ -114,8 +114,24 @@ def ace(model, x, y, eps: float, iters: int = 15, **_):
     return ace_full(model, x, y, eps, iters)[0]
 
 
-def ace_full(model, x, y, eps: float, iters: int = 15):
+def ace_uint8(model, x, y, eps: float, iters: int = 15, **_):
+    """ACE constrained to the 8-bit pixel lattice -- the realisable threat model."""
+    return ace_full(model, x, y, eps, iters, quantize=True)[0]
+
+
+def ace_full(model, x, y, eps: float, iters: int = 15, quantize: bool = False):
     """As ace(), returning (x_adv, effective_eps, clean_pred, accepted_logits).
+
+    QUANTIZE decides the threat model, and it is not a detail. Measured effective epsilons for
+    unquantised ACE on this detector are 0.102 / 0.261 / 0.447 grey levels at eps =
+    0.0005 / 0.002 / 0.005 -- the mean is BELOW one 8-bit quantisation step (0.5/255 = 0.00196).
+    The decode cache is uint8 and ToTensor puts x exactly on the k/255 grid, so rounding a
+    sub-step perturbation back to uint8 erases it outright. Unquantised ACE therefore describes
+    an attacker with post-decode TENSOR access; quantise=True describes one who can only upload
+    a FILE, which is the moderation threat model that matters. Report which one a row is.
+
+    This is the reason integer-constrained attacks exist in the forensics literature (Tondi,
+    Electronics Letters 54(21), 2018): small perturbations are cancelled by rounding to pixels.
 
     The accepted logits come FROM THE ACCEPT-CHECK FORWARD and must be the reported ones:
     re-running the model on x_adv uses a different batch shape, and EfficientNet under cuDNN
@@ -139,6 +155,8 @@ def ace_full(model, x, y, eps: float, iters: int = 15):
         if idx.numel() == 0:
             break
         cand = (x[idx] + direction[idx] * eps_i[idx].view(-1, 1, 1, 1) * eta[idx]).clamp(0, 1)
+        if quantize:
+            cand = torch.round(cand * 255.0) / 255.0     # snap to what a saved file can hold
         with torch.no_grad():
             cl = model(cand)
         ok = cl.argmax(1) == pred[idx]
@@ -226,6 +244,9 @@ ATTACKS = {
                        uses_labels=True,  defaults=dict(eps=2 / 255)),
     "ace":        dict(fn=ace,              family="confidence", direction="both",
                        uses_labels=True,  defaults=dict(eps=0.005)),
+    # realisable variant: every perturbed pixel is an integer number of grey levels
+    "ace_uint8":  dict(fn=ace_uint8,        family="confidence", direction="both",
+                       uses_labels=True,  defaults=dict(eps=0.005)),
     "overconf":   dict(fn=overconfidence,   family="confidence", direction="over_confidence",
                        uses_labels=False, defaults=dict(eps=4 / 255, steps=20)),
     "underconf":  dict(fn=underconfidence,  family="confidence", direction="under_confidence",
@@ -279,7 +300,7 @@ def condition_name(attack: str, **kw) -> str:
 # attack name -- "pgd_linfx_eps2_255_s10" -- fell through to family="realistic" with a
 # fabricated eps=0.0, i.e. it landed in the wrong pivot group carrying a wrong epsilon, and
 # the table looked fine. Unknown heads now raise.
-REALISTIC_PREFIXES = ("jpeg_q", "downscale_", "webp")
+REALISTIC_PREFIXES = ("jpeg_q", "downscale_", "webp", "squarecrop")
 
 
 def parse_condition(condition: str, strict: bool = True) -> dict:

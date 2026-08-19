@@ -1,0 +1,20 @@
+{
+  "split": "test",
+  "n": 15316,
+  "fake_prior": 0.5,
+  "B0_majority_class": 0.5,
+  "B0_square_is_fake": 0.9785191956124314,
+  "B0_png_is_fake": 0.7673021676677984,
+  "B0_square_or_png_is_fake": 0.9785191956124314,
+  "square_rate_by_label": {
+    "0": 0.04296160877513711,
+    "1": 1.0,
+    "2": 1.0
+  },
+  "png_rate_by_label": {
+    "0": 0.0,
+    "1": 1.0,
+    "2": 0.06920867067119352
+  },
+  "note": "A detector accuracy on SID-Set must be read against B0_square_is_fake, not against 0.5. See the module docstring."
+}

@@ -99,6 +99,63 @@ Structural, not disciplinary (`src/manifest.py`):
   label-1 and half label-2. The policy is in the sidecar because the base rate sets what
   accuracy and F1 mean.
 
+## The dataset has a trivial shortcut — and we verified we are not using it
+
+Measured on the exact test split (n=15,316, 50/50 prior):
+
+| rule | accuracy |
+|---|---|
+| `width == height` -> fake (no model) | **0.9785** |
+| CLIP ViT-L/14 probe | 0.9289 |
+| EfficientNet-B0 probe | 0.8311 |
+| original format PNG -> fake | 0.7673 |
+| majority class | 0.5000 |
+
+Label 1 (fully synthetic) is 100% square 1024x1024 PNG, label 2 (tampered) is 100% square, and
+only ~5% of real images are square. A one-line metadata rule with no learning in it beats every
+model here. **On SID-Set, an accuracy is not evidence of forensic capability until it is read
+against 0.9785, not against 0.5.** (Grommelt et al., "Fake or JPEG? Revealing Common Biases in
+Generated Image Detection Datasets".) `src/baselines.py` computes this and every table prints it.
+
+Our models do not read geometry — images arrive as 224x224 centre crops — but the cache
+re-encodes everything to JPEG q95, which turns PNG-vs-JPEG provenance into a single-vs-double
+compression trace a CNN could learn. So the shortcut is laundered, not removed, and the question
+had to be settled by measurement rather than argument:
+
+| CLIP ViT-L/14 probe | accuracy | AUROC(det) | AURC x10^-3 |
+|---|---|---|---|
+| uncontrolled | 0.9289 | 0.9801 | 11.83 |
+| **geometry-controlled** (`squarecrop`, fit AND eval) | **0.9291** | 0.9802 | 11.75 |
+
+Unchanged. The detector was never riding the artifact. Run any condition under `squarecrop` to
+reproduce; `tests/test_attacks.py` locks the property that the control actually removes geometry.
+
+## Two threat models for the confidence attack, and only one is realisable
+
+Unquantised ACE produces mean perturbations of **0.102 / 0.261 / 0.447 grey levels** at
+eps = 0.0005 / 0.002 / 0.005 — below one 8-bit quantisation step (0.5/255 = 0.00196). The decode
+cache is uint8 and `ToTensor` puts x exactly on the k/255 grid, so rounding a sub-step
+perturbation back to uint8 erases it. Unquantised ACE therefore describes an attacker with
+post-decode **tensor** access; `ace_uint8` describes one who can only upload a **file**, which is
+the moderation threat model that matters. (This is why integer-constrained attacks exist in
+forensics: Tondi, Electronics Letters 54(21), 2018.)
+
+| condition | acc | AUROC(fail) | AURC x10^-3 | residual risk |
+|---|---|---|---|---|
+| clean | 0.8311 | 0.7703 | 67.05 | 4.65% |
+| ACE eps=0.005, float32 (tensor access) | 0.8311 | 0.0002 | 469.14 | 98.13% |
+| ACE eps=0.0005, **uint8** | 0.8311 | 0.7703 | 67.05 | 4.65% |
+| ACE eps=0.002-0.005, **uint8** | 0.8311 | 0.0471 | 433.87 | **33.06%** |
+
+The sub-step row vanishes exactly as predicted, which is the control. The realisable row is the
+result: a **one-grey-level** perturbation, invisible to a human and survivable in a saved PNG,
+takes a policy tuned to a 5% residual-risk SLA to **33% wrong auto-decisions at bit-identical
+accuracy** — and coverage RISES to 50.4%, so the system auto-decides more while being far more
+wrong. That is Carlini & Farid's least-significant-bit result (CVPRW 2020, arXiv:2004.00622)
+moved from the prediction axis to the confidence axis.
+
+Report which threat model a row belongs to. Never quote the float32 number alone.
+
 ## Honest limitations — state these on every slide
 
 - **This is not the SID-Set test set.** The official test split is withheld by the authors
@@ -214,7 +271,8 @@ src/attacks.py    NormalizedModel (normalization inside forward) + ACE + conditi
 src/score.py      the condition table, temperature frozen on calib
 src/figures.py    fig1 risk-coverage, fig2 confidence histograms
 src/run_all.py    driver; --smoke is the offline pre-flight
-tests/            17 tests (9 metrics + 8 attacks), no GPU, no data, no network, <2 s
+src/baselines.py  trivial metadata baselines; the number every accuracy is read against
+tests/            19 tests (9 metrics + 10 attacks/hardening), no GPU, no data, no network, <2 s
 ```
 
 ## Run

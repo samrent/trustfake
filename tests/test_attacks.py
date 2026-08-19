@@ -162,3 +162,39 @@ def test_condition_names_round_trip():
     # k/255 form is exact and readable; the pre-existing ace artifacts stay parseable
     assert condition_name("pgd_linf") == "pgd_linf_eps2_255_s10"
     assert parse_condition("ace_eps0.005")["eps"] == 0.005
+
+
+# ---------------------------------------------- 10. the two hardening properties
+
+def test_quantised_ace_lands_only_on_the_8bit_lattice():
+    """The realisable threat model. Unquantised ACE produces mean perturbations of 0.10-0.45
+    grey levels -- below the 0.5/255 rounding threshold -- so it describes an attacker with
+    post-decode tensor access, not one who uploads a file. The quantised variant must move
+    every pixel by a whole number of grey levels or not at all."""
+    torch.manual_seed(0)
+    m = TinyDetector().eval()
+    for p in m.parameters():
+        p.requires_grad_(False)
+    x = torch.round(torch.rand(16, 3, 32, 32) * 255) / 255      # start ON the lattice
+    y = torch.randint(0, 2, (16,))
+
+    adv, eff, pred, logits = ace_full(m, x, y, eps=4 / 255, quantize=True)
+    delta = (adv - x) * 255
+    assert torch.allclose(delta, delta.round(), atol=1e-4), "quantised ACE left the 8-bit lattice"
+    assert (logits.argmax(1) == pred).all()
+
+    # and sub-step epsilon must be a no-op, not a small effect
+    adv0, _, _, _ = ace_full(m, x, y, eps=0.0005, quantize=True)
+    assert torch.equal(adv0, x), "sub-quantisation epsilon perturbed a uint8 image"
+
+
+def test_squarecrop_removes_the_geometry_artifact():
+    """SID-Set: label 1 and label 2 are 100% square, only ~5% of reals are, so
+    `width==height -> fake` scores 0.9785 on our test split -- above the CLIP probe. The
+    geometry control must make that rule constant, i.e. carry no label information at all."""
+    from src.features import apply_condition
+    from PIL import Image
+
+    for w, h in ((1024, 1024), (1024, 681), (640, 960)):
+        out = apply_condition(Image.new("RGB", (w, h)), "squarecrop")
+        assert out.size[0] == out.size[1] == min(w, h), f"{w}x{h} did not become square"

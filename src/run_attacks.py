@@ -62,10 +62,11 @@ def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.P
         if attack == "clean":
             with torch.no_grad():
                 lb = det.module(xb)
-        elif attack == "ace":
+        elif attack in ("ace", "ace_uint8"):
             # ACE reports the accept-pass logits: re-running on x_adv changes the batch shape
             # and cuDNN is not bit-identical across shapes, which flips boundary samples.
-            _, eff, clean_pred, lb = ace_full(det.module, xb, yb, kw["eps"])
+            _, eff, clean_pred, lb = ace_full(det.module, xb, yb, kw["eps"],
+                                              quantize=(attack == "ace_uint8"))
             effs.append(eff.cpu().numpy())
             preserved.append((lb.argmax(1) == clean_pred).float().mean().item())
         else:
