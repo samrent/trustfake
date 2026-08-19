@@ -1,0 +1,16 @@
+{
+  "model_id": "tf_efficientnet_b0.ns_jft_in1k+linear_probe",
+  "condition": "ace_eps0.002",
+  "split": "test",
+  "seed": 0,
+  "timestamp": "2026-08-19T13:57:03",
+  "n": 256,
+  "manifest_sha": "f4396a0d79df1b162ea17427cf1dd15b8a8400910a01779dbe174afe6b1b59bc",
+  "key": "uid",
+  "attack": "ACE (Galil & El-Yaniv Alg.1)",
+  "eps_requested": 0.002,
+  "seconds": 1.4,
+  "eps_effective_mean": 0.0010605866555124521,
+  "eps_effective_max": 0.0020000040531158447,
+  "label_preservation": 1.0
+}

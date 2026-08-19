@@ -1,0 +1,293 @@
+=== validation done, starting train 2026-08-19T13:06:31+02:00 ===
+[fetch] train: 249/249 shards -> /home/samuel-renteria/Desktop/FILES/DATASETS/sid-set
+Fetching 249 files:   0%|          | 0/249 [00:00<?, ?it/s]Fetching 249 files:   0%|          | 1/249 [00:38<2:40:07, 38.74s/it]Fetching 249 files:   1%|          | 2/249 [00:39<1:07:30, 16.40s/it]Fetching 249 files:   1%|          | 3/249 [00:40<38:29,  9.39s/it]  Fetching 249 files:   2%|▏         | 4/249 [00:40<23:51,  5.84s/it]Fetching 249 files:   2%|▏         | 5/249 [01:18<1:10:27, 17.32s/it]Fetching 249 files:   2%|▏         | 6/249 [01:19<48:05, 11.88s/it]  Fetching 249 files:   3%|▎         | 8/249 [01:20<24:34,  6.12s/it]Fetching 249 files:   4%|▎         | 9/249 [02:00<59:43, 14.93s/it]Fetching 249 files:   4%|▍         | 11/249 [02:01<35:02,  8.83s/it]Fetching 249 files:   5%|▍         | 12/249 [02:02<27:39,  7.00s/it]Fetching 249 files:   5%|▌         | 13/249 [02:41<59:22, 15.10s/it]Fetching 249 files:   6%|▌         | 14/249 [02:43<45:17, 11.56s/it]Fetching 249 files:   6%|▌         | 15/249 [02:44<33:42,  8.64s/it]Fetching 249 files:   6%|▋         | 16/249 [02:45<25:06,  6.47s/it]Fetching 249 files:   7%|▋         | 17/249 [03:25<1:02:09, 16.08s/it]Fetching 249 files:   7%|▋         | 18/249 [03:27<46:23, 12.05s/it]  Fetching 249 files:   8%|▊         | 19/249 [03:29<34:16,  8.94s/it]Fetching 249 files:   8%|▊         | 20/249 [03:38<34:13,  8.97s/it]Fetching 249 files:   8%|▊         | 21/249 [03:51<38:55, 10.24s/it]Fetching 249 files:   9%|▉         | 22/249 [04:13<51:42, 13.67s/it]Fetching 249 files:   9%|▉         | 23/249 [04:14<38:08, 10.13s/it]Fetching 249 files:  10%|▉         | 24/249 [04:27<41:12, 10.99s/it]Fetching 249 files:  10%|█         | 25/249 [04:31<33:10,  8.89s/it]Fetching 249 files:  10%|█         | 26/249 [04:45<37:45, 10.16s/it]Fetching 249 files:  11%|█         | 27/249 [05:05<49:30, 13.38s/it]Fetching 249 files:  11%|█         | 28/249 [05:07<35:49,  9.73s/it]Fetching 249 files:  12%|█▏        | 29/249 [05:11<29:21,  8.01s/it]Fetching 249 files:  12%|█▏        | 30/249 [05:24<34:55,  9.57s/it]Fetching 249 files:  12%|█▏        | 31/249 [05:47<49:20, 13.58s/it]Fetching 249 files:  13%|█▎        | 32/249 [05:50<37:26, 10.35s/it]Fetching 249 files:  13%|█▎        | 33/249 [06:03<40:51, 11.35s/it]Fetching 249 files:  14%|█▎        | 34/249 [06:04<29:36,  8.26s/it]Fetching 249 files:  14%|█▍        | 35/249 [06:31<49:32, 13.89s/it]Fetching 249 files:  14%|█▍        | 36/249 [06:36<39:37, 11.16s/it]Fetching 249 files:  15%|█▍        | 37/249 [06:37<28:34,  8.09s/it]Fetching 249 files:  15%|█▌        | 38/249 [06:48<31:34,  8.98s/it]Fetching 249 files:  16%|█▌        | 39/249 [07:17<52:51, 15.10s/it]Fetching 249 files:  16%|█▌        | 40/249 [07:20<39:39, 11.38s/it]Fetching 249 files:  16%|█▋        | 41/249 [07:22<29:54,  8.63s/it]Fetching 249 files:  17%|█▋        | 42/249 [07:23<21:28,  6.23s/it]Fetching 249 files:  17%|█▋        | 43/249 [07:54<46:41, 13.60s/it]Fetching 249 files:  18%|█▊        | 44/249 [08:11<49:52, 14.60s/it]Fetching 249 files:  18%|█▊        | 45/249 [08:12<36:08, 10.63s/it]Fetching 249 files:  18%|█▊        | 46/249 [08:13<25:37,  7.58s/it]Fetching 249 files:  19%|█▉        | 47/249 [08:41<46:23, 13.78s/it]Fetching 249 files:  19%|█▉        | 48/249 [08:43<34:32, 10.31s/it]Fetching 249 files:  20%|█▉        | 49/249 [08:47<28:02,  8.41s/it]Fetching 249 files:  20%|██        | 50/249 [08:52<24:05,  7.26s/it]Fetching 249 files:  20%|██        | 51/249 [09:16<41:09, 12.47s/it]Fetching 249 files:  21%|██        | 52/249 [09:30<42:15, 12.87s/it]Fetching 249 files:  21%|██▏       | 53/249 [09:30<29:49,  9.13s/it]Fetching 249 files:  22%|██▏       | 54/249 [09:37<27:38,  8.50s/it]Fetching 249 files:  22%|██▏       | 55/249 [09:46<27:04,  8.37s/it]Fetching 249 files:  22%|██▏       | 56/249 [10:11<43:14, 13.44s/it]Fetching 249 files:  23%|██▎       | 57/249 [10:11<30:30,  9.53s/it]Fetching 249 files:  23%|██▎       | 58/249 [10:13<22:49,  7.17s/it]Fetching 249 files:  24%|██▎       | 59/249 [10:38<39:45, 12.56s/it]Fetching 249 files:  24%|██▍       | 60/249 [10:39<28:14,  8.97s/it]Fetching 249 files:  24%|██▍       | 61/249 [10:56<36:23, 11.62s/it]Fetching 249 files:  25%|██▍       | 62/249 [10:59<27:19,  8.77s/it]Fetching 249 files:  25%|██▌       | 63/249 [11:20<38:38, 12.46s/it]Fetching 249 files:  26%|██▌       | 64/249 [11:29<35:33, 11.53s/it]Fetching 249 files:  26%|██▌       | 65/249 [11:32<27:55,  9.11s/it]Fetching 249 files:  27%|██▋       | 66/249 [11:35<21:43,  7.12s/it]Fetching 249 files:  27%|██▋       | 67/249 [11:58<36:17, 11.96s/it]Fetching 249 files:  27%|██▋       | 68/249 [12:17<42:09, 13.98s/it]Fetching 249 files:  28%|██▊       | 69/249 [12:18<30:22, 10.12s/it]Fetching 249 files:  28%|██▊       | 70/249 [12:19<22:07,  7.42s/it]Fetching 249 files:  29%|██▊       | 71/249 [12:21<17:19,  5.84s/it]Fetching 249 files:  29%|██▉       | 72/249 [12:53<39:49, 13.50s/it]Fetching 249 files:  29%|██▉       | 73/249 [12:57<31:19, 10.68s/it]Fetching 249 files:  30%|██▉       | 74/249 [13:00<24:19,  8.34s/it]Fetching 249 files:  30%|███       | 75/249 [13:20<34:57, 12.06s/it]Fetching 249 files:  31%|███       | 76/249 [13:27<30:32, 10.59s/it]Fetching 249 files:  31%|███       | 77/249 [13:28<21:57,  7.66s/it]Fetching 249 files:  31%|███▏      | 78/249 [13:31<17:15,  6.06s/it]Fetching 249 files:  32%|███▏      | 79/249 [13:56<33:54, 11.96s/it]Fetching 249 files:  32%|███▏      | 80/249 [14:11<35:45, 12.69s/it]Fetching 249 files:  33%|███▎      | 81/249 [14:12<25:32,  9.12s/it]Fetching 249 files:  33%|███▎      | 82/249 [14:13<18:57,  6.81s/it]Fetching 249 files:  33%|███▎      | 83/249 [14:35<31:37, 11.43s/it]Fetching 249 files:  34%|███▎      | 84/249 [14:47<31:55, 11.61s/it]Fetching 249 files:  34%|███▍      | 85/249 [14:50<24:31,  8.97s/it]Fetching 249 files:  35%|███▍      | 86/249 [14:56<21:38,  7.96s/it]Fetching 249 files:  35%|███▍      | 87/249 [15:00<18:56,  7.01s/it]Fetching 249 files:  35%|███▌      | 88/249 [15:23<31:36, 11.78s/it]Fetching 249 files:  36%|███▌      | 89/249 [15:26<23:55,  8.97s/it]Fetching 249 files:  36%|███▌      | 90/249 [15:30<19:39,  7.42s/it]Fetching 249 files:  37%|███▋      | 91/249 [15:50<29:58, 11.38s/it]Fetching 249 files:  37%|███▋      | 92/249 [16:02<30:10, 11.53s/it]Fetching 249 files:  37%|███▋      | 93/249 [16:04<22:30,  8.66s/it]Fetching 249 files:  38%|███▊      | 94/249 [16:05<16:07,  6.24s/it]Fetching 249 files:  38%|███▊      | 95/249 [16:28<28:50, 11.24s/it]Fetching 249 files:  39%|███▊      | 96/249 [16:30<22:01,  8.64s/it]Fetching 249 files:  39%|███▉      | 97/249 [16:37<20:35,  8.13s/it]Fetching 249 files:  39%|███▉      | 98/249 [16:52<25:32, 10.15s/it]Fetching 249 files:  40%|███▉      | 99/249 [16:58<22:05,  8.83s/it]Fetching 249 files:  40%|████      | 100/249 [17:10<24:47,  9.98s/it]Fetching 249 files:  41%|████      | 101/249 [17:25<27:52, 11.30s/it]Fetching 249 files:  41%|████      | 102/249 [17:31<24:00,  9.80s/it]Fetching 249 files:  41%|████▏     | 103/249 [17:32<17:19,  7.12s/it]Fetching 249 files:  42%|████▏     | 104/249 [17:32<12:19,  5.10s/it]Fetching 249 files:  42%|████▏     | 105/249 [17:52<22:48,  9.50s/it]Fetching 249 files:  43%|████▎     | 106/249 [18:05<25:07, 10.54s/it]Fetching 249 files:  43%|████▎     | 107/249 [18:14<24:06, 10.18s/it]Fetching 249 files:  44%|████▍     | 109/249 [18:24<17:53,  7.67s/it]Fetching 249 files:  44%|████▍     | 110/249 [18:48<27:26, 11.85s/it]Fetching 249 files:  45%|████▍     | 111/249 [18:49<20:25,  8.88s/it]Fetching 249 files:  45%|████▍     | 112/249 [18:54<17:41,  7.75s/it]Fetching 249 files:  45%|████▌     | 113/249 [18:55<13:49,  6.10s/it]Fetching 249 files:  46%|████▌     | 114/249 [19:30<32:00, 14.23s/it]Fetching 249 files:  46%|████▌     | 115/249 [19:31<22:57, 10.28s/it]Fetching 249 files:  47%|████▋     | 116/249 [19:31<16:32,  7.47s/it]Fetching 249 files:  47%|████▋     | 117/249 [19:31<11:44,  5.34s/it]Fetching 249 files:  47%|████▋     | 118/249 [20:05<30:10, 13.82s/it]Fetching 249 files:  48%|████▊     | 119/249 [20:07<22:10, 10.23s/it]Fetching 249 files:  48%|████▊     | 120/249 [20:10<17:11,  7.99s/it]Fetching 249 files:  49%|████▊     | 121/249 [20:12<13:11,  6.18s/it]Fetching 249 files:  49%|████▉     | 122/249 [20:32<21:42, 10.25s/it]Fetching 249 files:  49%|████▉     | 123/249 [20:44<22:34, 10.75s/it]Fetching 249 files:  50%|████▉     | 124/249 [20:44<15:48,  7.58s/it]Fetching 249 files:  50%|█████     | 125/249 [21:06<24:38, 11.92s/it]Fetching 249 files:  51%|█████     | 126/249 [21:12<20:47, 10.14s/it]Fetching 249 files:  51%|█████     | 127/249 [21:19<18:35,  9.14s/it]Fetching 249 files:  51%|█████▏    | 128/249 [21:20<13:47,  6.84s/it]Fetching 249 files:  52%|█████▏    | 129/249 [21:48<26:07, 13.06s/it]Fetching 249 files:  52%|█████▏    | 130/249 [21:48<18:35,  9.37s/it]Fetching 249 files:  53%|█████▎    | 131/249 [21:52<14:48,  7.53s/it]Fetching 249 files:  53%|█████▎    | 132/249 [22:02<16:33,  8.49s/it]Fetching 249 files:  53%|█████▎    | 133/249 [22:31<28:11, 14.58s/it]Fetching 249 files:  54%|█████▍    | 134/249 [22:34<21:06, 11.01s/it]Fetching 249 files:  54%|█████▍    | 135/249 [22:35<15:29,  8.15s/it]Fetching 249 files:  55%|█████▍    | 136/249 [22:46<16:44,  8.89s/it]Fetching 249 files:  55%|█████▌    | 137/249 [22:56<17:08,  9.18s/it]Fetching 249 files:  55%|█████▌    | 138/249 [23:10<19:30, 10.54s/it]Fetching 249 files:  56%|█████▌    | 139/249 [23:25<22:14, 12.13s/it]Fetching 249 files:  56%|█████▌    | 140/249 [23:27<16:14,  8.94s/it]Fetching 249 files:  57%|█████▋    | 141/249 [23:35<15:24,  8.56s/it]Fetching 249 files:  57%|█████▋    | 142/249 [23:38<12:19,  6.91s/it]Fetching 249 files:  57%|█████▋    | 143/249 [24:08<24:42, 13.98s/it]Fetching 249 files:  58%|█████▊    | 144/249 [24:08<17:15,  9.86s/it]Fetching 249 files:  58%|█████▊    | 145/249 [24:09<12:25,  7.17s/it]Fetching 249 files:  59%|█████▉    | 147/249 [24:42<19:28, 11.46s/it]Fetching 249 files:  59%|█████▉    | 148/249 [24:46<16:01,  9.52s/it]Fetching 249 files:  60%|█████▉    | 149/249 [24:51<14:06,  8.46s/it]Fetching 249 files:  60%|██████    | 150/249 [24:52<10:44,  6.51s/it]Fetching 249 files:  61%|██████    | 151/249 [25:15<17:46, 10.88s/it]Fetching 249 files:  61%|██████    | 152/249 [25:19<14:25,  8.93s/it]Fetching 249 files:  61%|██████▏   | 153/249 [25:19<10:25,  6.51s/it]Fetching 249 files:  62%|██████▏   | 154/249 [25:45<19:27, 12.29s/it]Fetching 249 files:  62%|██████▏   | 155/249 [25:49<15:13,  9.72s/it]Fetching 249 files:  63%|██████▎   | 156/249 [25:53<12:34,  8.11s/it]Fetching 249 files:  63%|██████▎   | 157/249 [25:58<10:45,  7.02s/it]Fetching 249 files:  63%|██████▎   | 158/249 [26:18<16:46, 11.06s/it]Fetching 249 files:  64%|██████▍   | 159/249 [26:32<17:49, 11.88s/it]Fetching 249 files:  64%|██████▍   | 160/249 [26:33<12:46,  8.61s/it]Fetching 249 files:  65%|██████▍   | 161/249 [26:37<10:35,  7.22s/it]Fetching 249 files:  65%|██████▌   | 162/249 [27:02<18:16, 12.60s/it]Fetching 249 files:  65%|██████▌   | 163/249 [27:05<13:56,  9.73s/it]Fetching 249 files:  66%|██████▌   | 164/249 [27:06<09:44,  6.88s/it]Fetching 249 files:  66%|██████▋   | 165/249 [27:06<07:07,  5.09s/it]Fetching 249 files:  67%|██████▋   | 166/249 [27:36<17:08, 12.39s/it]Fetching 249 files:  67%|██████▋   | 167/249 [27:45<15:38, 11.44s/it]Fetching 249 files:  67%|██████▋   | 168/249 [27:47<11:38,  8.63s/it]Fetching 249 files:  68%|██████▊   | 169/249 [27:47<08:10,  6.13s/it]Fetching 249 files:  68%|██████▊   | 170/249 [28:10<14:28, 10.99s/it]Fetching 249 files:  69%|██████▊   | 171/249 [28:24<15:42, 12.08s/it]Fetching 249 files:  69%|██████▉   | 172/249 [28:26<11:22,  8.87s/it]Fetching 249 files:  69%|██████▉   | 173/249 [28:28<08:31,  6.73s/it]Fetching 249 files:  70%|██████▉   | 174/249 [28:49<13:46, 11.02s/it]Fetching 249 files:  70%|███████   | 175/249 [28:57<12:36, 10.23s/it]Fetching 249 files:  71%|███████   | 176/249 [29:11<13:51, 11.39s/it]Fetching 249 files:  71%|███████   | 177/249 [29:11<09:42,  8.09s/it]Fetching 249 files:  71%|███████▏  | 178/249 [29:12<06:56,  5.86s/it]Fetching 249 files:  72%|███████▏  | 179/249 [29:20<07:33,  6.48s/it]Fetching 249 files:  72%|███████▏  | 180/249 [29:45<13:52, 12.07s/it]Fetching 249 files:  73%|███████▎  | 181/249 [29:47<10:03,  8.88s/it]Fetching 249 files:  73%|███████▎  | 182/249 [30:10<14:41, 13.16s/it]Fetching 249 files:  73%|███████▎  | 183/249 [30:10<10:22,  9.43s/it]Fetching 249 files:  74%|███████▍  | 184/249 [30:12<07:36,  7.03s/it]Fetching 249 files:  74%|███████▍  | 185/249 [30:13<05:38,  5.29s/it]Fetching 249 files:  75%|███████▍  | 186/249 [30:44<13:30, 12.87s/it]Fetching 249 files:  75%|███████▌  | 187/249 [30:49<11:00, 10.66s/it]Fetching 249 files:  76%|███████▌  | 188/249 [30:52<08:21,  8.23s/it]Fetching 249 files:  76%|███████▌  | 189/249 [30:54<06:35,  6.59s/it]Fetching 249 files:  76%|███████▋  | 190/249 [31:17<11:09, 11.34s/it]Fetching 249 files:  77%|███████▋  | 191/249 [31:32<12:03, 12.47s/it]Fetching 249 files:  77%|███████▋  | 192/249 [31:33<08:37,  9.07s/it]Fetching 249 files:  78%|███████▊  | 193/249 [31:35<06:29,  6.95s/it]Fetching 249 files:  78%|███████▊  | 194/249 [31:37<04:59,  5.45s/it]Fetching 249 files:  78%|███████▊  | 195/249 [32:02<10:16, 11.42s/it]Fetching 249 files:  79%|███████▊  | 196/249 [32:09<08:44,  9.90s/it]Fetching 249 files:  79%|███████▉  | 197/249 [32:13<07:00,  8.10s/it]Fetching 249 files:  80%|███████▉  | 198/249 [32:19<06:27,  7.60s/it]Fetching 249 files:  80%|███████▉  | 199/249 [32:41<09:54, 11.90s/it]Fetching 249 files:  80%|████████  | 200/249 [32:47<08:17, 10.14s/it]Fetching 249 files:  81%|████████  | 201/249 [32:48<05:49,  7.28s/it]Fetching 249 files:  81%|████████  | 202/249 [32:50<04:34,  5.85s/it]Fetching 249 files:  82%|████████▏ | 203/249 [33:12<08:06, 10.57s/it]Fetching 249 files:  82%|████████▏ | 204/249 [33:16<06:30,  8.68s/it]Fetching 249 files:  82%|████████▏ | 205/249 [33:27<06:51,  9.35s/it]Fetching 249 files:  83%|████████▎ | 206/249 [33:38<07:01,  9.81s/it]Fetching 249 files:  83%|████████▎ | 207/249 [33:41<05:30,  7.86s/it]Fetching 249 files:  84%|████████▎ | 208/249 [34:03<08:16, 12.11s/it]Fetching 249 files:  84%|████████▍ | 209/249 [34:13<07:33, 11.35s/it]Fetching 249 files:  84%|████████▍ | 210/249 [34:28<08:04, 12.42s/it]Fetching 249 files:  85%|████████▍ | 211/249 [34:30<05:51,  9.24s/it]Fetching 249 files:  85%|████████▌ | 212/249 [34:36<05:06,  8.27s/it]Fetching 249 files:  86%|████████▌ | 213/249 [34:48<05:47,  9.65s/it]Fetching 249 files:  86%|████████▌ | 214/249 [35:03<06:30, 11.15s/it]Fetching 249 files:  86%|████████▋ | 215/249 [35:14<06:18, 11.13s/it]Fetching 249 files:  87%|████████▋ | 216/249 [35:19<05:05,  9.27s/it]Fetching 249 files:  88%|████████▊ | 218/249 [35:44<05:30, 10.65s/it]Fetching 249 files:  88%|████████▊ | 219/249 [35:58<05:49, 11.66s/it]Fetching 249 files:  88%|████████▊ | 220/249 [36:06<05:09, 10.67s/it]Fetching 249 files:  89%|████████▉ | 221/249 [36:10<04:08,  8.88s/it]Fetching 249 files:  89%|████████▉ | 222/249 [36:36<06:09, 13.70s/it]Fetching 249 files:  90%|████████▉ | 223/249 [36:38<04:23, 10.12s/it]Fetching 249 files:  90%|████████▉ | 224/249 [36:40<03:14,  7.78s/it]Fetching 249 files:  90%|█████████ | 225/249 [36:41<02:23,  5.97s/it]Fetching 249 files:  91%|█████████ | 226/249 [37:13<05:11, 13.52s/it]Fetching 249 files:  91%|█████████ | 227/249 [37:28<05:07, 13.96s/it]Fetching 249 files:  92%|█████████▏| 228/249 [37:28<03:30, 10.02s/it]Fetching 249 files:  92%|█████████▏| 229/249 [37:30<02:31,  7.58s/it]Fetching 249 files:  92%|█████████▏| 230/249 [37:48<03:21, 10.60s/it]Fetching 249 files:  93%|█████████▎| 231/249 [38:06<03:49, 12.74s/it]Fetching 249 files:  93%|█████████▎| 232/249 [38:09<02:46,  9.81s/it]Fetching 249 files:  94%|█████████▎| 233/249 [38:15<02:18,  8.68s/it]Fetching 249 files:  94%|█████████▍| 234/249 [38:36<03:04, 12.32s/it]Fetching 249 files:  94%|█████████▍| 235/249 [38:36<02:01,  8.68s/it]Fetching 249 files:  95%|█████████▍| 236/249 [38:51<02:16, 10.53s/it]Fetching 249 files:  95%|█████████▌| 237/249 [38:53<01:35,  7.99s/it]Fetching 249 files:  96%|█████████▌| 238/249 [39:24<02:45, 15.05s/it]Fetching 249 files:  96%|█████████▌| 239/249 [39:34<02:13, 13.40s/it]Fetching 249 files:  96%|█████████▋| 240/249 [39:34<01:25,  9.47s/it]Fetching 249 files:  97%|█████████▋| 241/249 [39:36<00:58,  7.30s/it]Fetching 249 files:  97%|█████████▋| 242/249 [40:11<01:49, 15.67s/it]Fetching 249 files:  98%|█████████▊| 243/249 [40:13<01:08, 11.48s/it]Fetching 249 files:  98%|█████████▊| 244/249 [40:13<00:40,  8.08s/it]Fetching 249 files:  98%|█████████▊| 245/249 [40:14<00:23,  5.78s/it]Fetching 249 files:  99%|█████████▉| 246/249 [40:46<00:41, 13.84s/it]Fetching 249 files:  99%|█████████▉| 247/249 [40:53<00:23, 11.58s/it]Fetching 249 files: 100%|█████████▉| 248/249 [40:54<00:08,  8.47s/it]Fetching 249 files: 100%|██████████| 249/249 [40:55<00:00,  6.36s/it]Fetching 249 files: 100%|██████████| 249/249 [40:55<00:00,  9.86s/it]
+[fetch] download finished in 2456s
+[verify] 284 shards on disk
+  [1/284] train-00000-of-00249.parquet  844 rows  {'real': 289, 'synthetic': 287, 'tampered': 268}
+  [2/284] train-00001-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 289, 'tampered': 271}
+  [3/284] train-00002-of-00249.parquet  844 rows  {'real': 265, 'synthetic': 268, 'tampered': 311}
+  [4/284] train-00003-of-00249.parquet  844 rows  {'real': 293, 'synthetic': 279, 'tampered': 272}
+  [5/284] train-00004-of-00249.parquet  844 rows  {'real': 281, 'synthetic': 277, 'tampered': 286}
+  [6/284] train-00005-of-00249.parquet  844 rows  {'real': 279, 'synthetic': 250, 'tampered': 315}
+  [7/284] train-00006-of-00249.parquet  844 rows  {'real': 313, 'synthetic': 272, 'tampered': 259}
+  [8/284] train-00007-of-00249.parquet  844 rows  {'real': 269, 'synthetic': 263, 'tampered': 312}
+  [9/284] train-00008-of-00249.parquet  844 rows  {'real': 263, 'synthetic': 292, 'tampered': 289}
+  [10/284] train-00009-of-00249.parquet  844 rows  {'real': 278, 'synthetic': 304, 'tampered': 262}
+  [11/284] train-00010-of-00249.parquet  844 rows  {'real': 295, 'synthetic': 286, 'tampered': 263}
+  [12/284] train-00011-of-00249.parquet  844 rows  {'real': 269, 'synthetic': 296, 'tampered': 279}
+  [13/284] train-00012-of-00249.parquet  844 rows  {'real': 277, 'synthetic': 274, 'tampered': 293}
+  [14/284] train-00013-of-00249.parquet  844 rows  {'real': 264, 'synthetic': 292, 'tampered': 288}
+  [15/284] train-00014-of-00249.parquet  844 rows  {'real': 270, 'synthetic': 295, 'tampered': 279}
+  [16/284] train-00015-of-00249.parquet  844 rows  {'real': 280, 'synthetic': 298, 'tampered': 266}
+  [17/284] train-00016-of-00249.parquet  844 rows  {'real': 276, 'synthetic': 268, 'tampered': 300}
+  [18/284] train-00017-of-00249.parquet  844 rows  {'real': 274, 'synthetic': 293, 'tampered': 277}
+  [19/284] train-00018-of-00249.parquet  844 rows  {'real': 269, 'synthetic': 280, 'tampered': 295}
+  [20/284] train-00019-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 304, 'tampered': 256}
+  [21/284] train-00020-of-00249.parquet  844 rows  {'real': 286, 'synthetic': 276, 'tampered': 282}
+  [22/284] train-00021-of-00249.parquet  844 rows  {'real': 283, 'synthetic': 281, 'tampered': 280}
+  [23/284] train-00022-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 275, 'tampered': 285}
+  [24/284] train-00023-of-00249.parquet  844 rows  {'real': 269, 'synthetic': 299, 'tampered': 276}
+  [25/284] train-00024-of-00249.parquet  844 rows  {'real': 298, 'synthetic': 254, 'tampered': 292}
+  [26/284] train-00025-of-00249.parquet  844 rows  {'real': 262, 'synthetic': 294, 'tampered': 288}
+  [27/284] train-00026-of-00249.parquet  844 rows  {'real': 265, 'synthetic': 283, 'tampered': 296}
+  [28/284] train-00027-of-00249.parquet  844 rows  {'real': 291, 'synthetic': 268, 'tampered': 285}
+  [29/284] train-00028-of-00249.parquet  844 rows  {'real': 315, 'synthetic': 236, 'tampered': 293}
+  [30/284] train-00029-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 282, 'tampered': 278}
+  [31/284] train-00030-of-00249.parquet  844 rows  {'real': 281, 'synthetic': 296, 'tampered': 267}
+  [32/284] train-00031-of-00249.parquet  844 rows  {'real': 273, 'synthetic': 271, 'tampered': 300}
+  [33/284] train-00032-of-00249.parquet  844 rows  {'real': 277, 'synthetic': 291, 'tampered': 276}
+  [34/284] train-00033-of-00249.parquet  844 rows  {'real': 267, 'synthetic': 281, 'tampered': 296}
+  [35/284] train-00034-of-00249.parquet  844 rows  {'real': 291, 'synthetic': 278, 'tampered': 275}
+  [36/284] train-00035-of-00249.parquet  844 rows  {'real': 299, 'synthetic': 283, 'tampered': 262}
+  [37/284] train-00036-of-00249.parquet  844 rows  {'real': 303, 'synthetic': 261, 'tampered': 280}
+  [38/284] train-00037-of-00249.parquet  844 rows  {'real': 267, 'synthetic': 295, 'tampered': 282}
+  [39/284] train-00038-of-00249.parquet  844 rows  {'real': 278, 'synthetic': 285, 'tampered': 281}
+  [40/284] train-00039-of-00249.parquet  844 rows  {'real': 280, 'synthetic': 290, 'tampered': 274}
+  [41/284] train-00040-of-00249.parquet  844 rows  {'real': 291, 'synthetic': 289, 'tampered': 264}
+  [42/284] train-00041-of-00249.parquet  844 rows  {'real': 291, 'synthetic': 270, 'tampered': 283}
+  [43/284] train-00042-of-00249.parquet  844 rows  {'real': 274, 'synthetic': 302, 'tampered': 268}
+  [44/284] train-00043-of-00249.parquet  844 rows  {'real': 294, 'synthetic': 264, 'tampered': 286}
+  [45/284] train-00044-of-00249.parquet  844 rows  {'real': 271, 'synthetic': 294, 'tampered': 279}
+  [46/284] train-00045-of-00249.parquet  844 rows  {'real': 288, 'synthetic': 281, 'tampered': 275}
+  [47/284] train-00046-of-00249.parquet  844 rows  {'real': 304, 'synthetic': 286, 'tampered': 254}
+  [48/284] train-00047-of-00249.parquet  844 rows  {'real': 303, 'synthetic': 275, 'tampered': 266}
+  [49/284] train-00048-of-00249.parquet  844 rows  {'real': 299, 'synthetic': 281, 'tampered': 264}
+  [50/284] train-00049-of-00249.parquet  844 rows  {'real': 263, 'synthetic': 289, 'tampered': 292}
+  [51/284] train-00050-of-00249.parquet  844 rows  {'real': 277, 'synthetic': 264, 'tampered': 303}
+  [52/284] train-00051-of-00249.parquet  844 rows  {'real': 282, 'synthetic': 282, 'tampered': 280}
+  [53/284] train-00052-of-00249.parquet  844 rows  {'real': 274, 'synthetic': 284, 'tampered': 286}
+  [54/284] train-00053-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 280, 'tampered': 280}
+  [55/284] train-00054-of-00249.parquet  844 rows  {'real': 294, 'synthetic': 276, 'tampered': 274}
+  [56/284] train-00055-of-00249.parquet  844 rows  {'real': 296, 'synthetic': 275, 'tampered': 273}
+  [57/284] train-00056-of-00249.parquet  844 rows  {'real': 303, 'synthetic': 293, 'tampered': 248}
+  [58/284] train-00057-of-00249.parquet  844 rows  {'real': 294, 'synthetic': 269, 'tampered': 281}
+  [59/284] train-00058-of-00249.parquet  844 rows  {'real': 289, 'synthetic': 275, 'tampered': 280}
+  [60/284] train-00059-of-00249.parquet  844 rows  {'real': 279, 'synthetic': 300, 'tampered': 265}
+  [61/284] train-00060-of-00249.parquet  844 rows  {'real': 254, 'synthetic': 285, 'tampered': 305}
+  [62/284] train-00061-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 302, 'tampered': 258}
+  [63/284] train-00062-of-00249.parquet  844 rows  {'real': 279, 'synthetic': 282, 'tampered': 283}
+  [64/284] train-00063-of-00249.parquet  844 rows  {'real': 275, 'synthetic': 290, 'tampered': 279}
+  [65/284] train-00064-of-00249.parquet  844 rows  {'real': 268, 'synthetic': 300, 'tampered': 276}
+  [66/284] train-00065-of-00249.parquet  844 rows  {'real': 274, 'synthetic': 274, 'tampered': 296}
+  [67/284] train-00066-of-00249.parquet  844 rows  {'real': 257, 'synthetic': 298, 'tampered': 289}
+  [68/284] train-00067-of-00249.parquet  844 rows  {'real': 291, 'synthetic': 284, 'tampered': 269}
+  [69/284] train-00068-of-00249.parquet  844 rows  {'real': 289, 'synthetic': 291, 'tampered': 264}
+  [70/284] train-00069-of-00249.parquet  844 rows  {'real': 273, 'synthetic': 283, 'tampered': 288}
+  [71/284] train-00070-of-00249.parquet  844 rows  {'real': 298, 'synthetic': 277, 'tampered': 269}
+  [72/284] train-00071-of-00249.parquet  844 rows  {'real': 274, 'synthetic': 278, 'tampered': 292}
+  [73/284] train-00072-of-00249.parquet  844 rows  {'real': 290, 'synthetic': 291, 'tampered': 263}
+  [74/284] train-00073-of-00249.parquet  844 rows  {'real': 283, 'synthetic': 292, 'tampered': 269}
+  [75/284] train-00074-of-00249.parquet  844 rows  {'real': 279, 'synthetic': 280, 'tampered': 285}
+  [76/284] train-00075-of-00249.parquet  844 rows  {'real': 286, 'synthetic': 277, 'tampered': 281}
+  [77/284] train-00076-of-00249.parquet  844 rows  {'real': 290, 'synthetic': 282, 'tampered': 272}
+  [78/284] train-00077-of-00249.parquet  844 rows  {'real': 314, 'synthetic': 271, 'tampered': 259}
+  [79/284] train-00078-of-00249.parquet  844 rows  {'real': 293, 'synthetic': 264, 'tampered': 287}
+  [80/284] train-00079-of-00249.parquet  844 rows  {'real': 276, 'synthetic': 293, 'tampered': 275}
+  [81/284] train-00080-of-00249.parquet  844 rows  {'real': 286, 'synthetic': 284, 'tampered': 274}
+  [82/284] train-00081-of-00249.parquet  844 rows  {'real': 263, 'synthetic': 296, 'tampered': 285}
+  [83/284] train-00082-of-00249.parquet  844 rows  {'real': 288, 'synthetic': 278, 'tampered': 278}
+  [84/284] train-00083-of-00249.parquet  844 rows  {'real': 261, 'synthetic': 271, 'tampered': 312}
+  [85/284] train-00084-of-00249.parquet  844 rows  {'real': 279, 'synthetic': 286, 'tampered': 279}
+  [86/284] train-00085-of-00249.parquet  844 rows  {'real': 286, 'synthetic': 273, 'tampered': 285}
+  [87/284] train-00086-of-00249.parquet  844 rows  {'real': 269, 'synthetic': 296, 'tampered': 279}
+  [88/284] train-00087-of-00249.parquet  844 rows  {'real': 280, 'synthetic': 273, 'tampered': 291}
+  [89/284] train-00088-of-00249.parquet  844 rows  {'real': 284, 'synthetic': 267, 'tampered': 293}
+  [90/284] train-00089-of-00249.parquet  844 rows  {'real': 248, 'synthetic': 290, 'tampered': 306}
+  [91/284] train-00090-of-00249.parquet  844 rows  {'real': 302, 'synthetic': 280, 'tampered': 262}
+  [92/284] train-00091-of-00249.parquet  844 rows  {'real': 276, 'synthetic': 282, 'tampered': 286}
+  [93/284] train-00092-of-00249.parquet  844 rows  {'real': 278, 'synthetic': 298, 'tampered': 268}
+  [94/284] train-00093-of-00249.parquet  843 rows  {'real': 268, 'synthetic': 296, 'tampered': 279}
+  [95/284] train-00094-of-00249.parquet  843 rows  {'real': 274, 'synthetic': 296, 'tampered': 273}
+  [96/284] train-00095-of-00249.parquet  843 rows  {'real': 296, 'synthetic': 273, 'tampered': 274}
+  [97/284] train-00096-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 272, 'tampered': 285}
+  [98/284] train-00097-of-00249.parquet  843 rows  {'real': 273, 'synthetic': 264, 'tampered': 306}
+  [99/284] train-00098-of-00249.parquet  843 rows  {'real': 295, 'synthetic': 271, 'tampered': 277}
+  [100/284] train-00099-of-00249.parquet  843 rows  {'real': 273, 'synthetic': 301, 'tampered': 269}
+  [101/284] train-00100-of-00249.parquet  843 rows  {'real': 271, 'synthetic': 270, 'tampered': 302}
+  [102/284] train-00101-of-00249.parquet  843 rows  {'real': 266, 'synthetic': 304, 'tampered': 273}
+  [103/284] train-00102-of-00249.parquet  843 rows  {'real': 258, 'synthetic': 300, 'tampered': 285}
+  [104/284] train-00103-of-00249.parquet  843 rows  {'real': 277, 'synthetic': 271, 'tampered': 295}
+  [105/284] train-00104-of-00249.parquet  843 rows  {'real': 279, 'synthetic': 283, 'tampered': 281}
+  [106/284] train-00105-of-00249.parquet  843 rows  {'real': 279, 'synthetic': 294, 'tampered': 270}
+  [107/284] train-00106-of-00249.parquet  843 rows  {'real': 283, 'synthetic': 266, 'tampered': 294}
+  [108/284] train-00107-of-00249.parquet  843 rows  {'real': 270, 'synthetic': 288, 'tampered': 285}
+  [109/284] train-00108-of-00249.parquet  843 rows  {'real': 275, 'synthetic': 273, 'tampered': 295}
+  [110/284] train-00109-of-00249.parquet  843 rows  {'real': 258, 'synthetic': 291, 'tampered': 294}
+  [111/284] train-00110-of-00249.parquet  843 rows  {'real': 282, 'synthetic': 278, 'tampered': 283}
+  [112/284] train-00111-of-00249.parquet  843 rows  {'real': 300, 'synthetic': 290, 'tampered': 253}
+  [113/284] train-00112-of-00249.parquet  843 rows  {'real': 257, 'synthetic': 300, 'tampered': 286}
+  [114/284] train-00113-of-00249.parquet  843 rows  {'real': 256, 'synthetic': 279, 'tampered': 308}
+  [115/284] train-00114-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 288, 'tampered': 269}
+  [116/284] train-00115-of-00249.parquet  843 rows  {'real': 270, 'synthetic': 313, 'tampered': 260}
+  [117/284] train-00116-of-00249.parquet  843 rows  {'real': 296, 'synthetic': 262, 'tampered': 285}
+  [118/284] train-00117-of-00249.parquet  843 rows  {'real': 277, 'synthetic': 274, 'tampered': 292}
+  [119/284] train-00118-of-00249.parquet  843 rows  {'real': 281, 'synthetic': 278, 'tampered': 284}
+  [120/284] train-00119-of-00249.parquet  843 rows  {'real': 265, 'synthetic': 279, 'tampered': 299}
+  [121/284] train-00120-of-00249.parquet  843 rows  {'real': 265, 'synthetic': 284, 'tampered': 294}
+  [122/284] train-00121-of-00249.parquet  843 rows  {'real': 299, 'synthetic': 263, 'tampered': 281}
+  [123/284] train-00122-of-00249.parquet  843 rows  {'real': 306, 'synthetic': 282, 'tampered': 255}
+  [124/284] train-00123-of-00249.parquet  843 rows  {'real': 265, 'synthetic': 272, 'tampered': 306}
+  [125/284] train-00124-of-00249.parquet  843 rows  {'real': 306, 'synthetic': 262, 'tampered': 275}
+  [126/284] train-00125-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 267, 'tampered': 282}
+  [127/284] train-00126-of-00249.parquet  843 rows  {'real': 257, 'synthetic': 287, 'tampered': 299}
+  [128/284] train-00127-of-00249.parquet  843 rows  {'real': 264, 'synthetic': 288, 'tampered': 291}
+  [129/284] train-00128-of-00249.parquet  843 rows  {'real': 259, 'synthetic': 286, 'tampered': 298}
+  [130/284] train-00129-of-00249.parquet  843 rows  {'real': 279, 'synthetic': 289, 'tampered': 275}
+  [131/284] train-00130-of-00249.parquet  843 rows  {'real': 287, 'synthetic': 287, 'tampered': 269}
+  [132/284] train-00131-of-00249.parquet  843 rows  {'real': 263, 'synthetic': 291, 'tampered': 289}
+  [133/284] train-00132-of-00249.parquet  843 rows  {'real': 268, 'synthetic': 278, 'tampered': 297}
+  [134/284] train-00133-of-00249.parquet  843 rows  {'real': 273, 'synthetic': 288, 'tampered': 282}
+  [135/284] train-00134-of-00249.parquet  843 rows  {'real': 270, 'synthetic': 271, 'tampered': 302}
+  [136/284] train-00135-of-00249.parquet  843 rows  {'real': 289, 'synthetic': 277, 'tampered': 277}
+  [137/284] train-00136-of-00249.parquet  843 rows  {'real': 289, 'synthetic': 287, 'tampered': 267}
+  [138/284] train-00137-of-00249.parquet  843 rows  {'real': 279, 'synthetic': 290, 'tampered': 274}
+  [139/284] train-00138-of-00249.parquet  843 rows  {'real': 268, 'synthetic': 298, 'tampered': 277}
+  [140/284] train-00139-of-00249.parquet  843 rows  {'real': 287, 'synthetic': 274, 'tampered': 282}
+  [141/284] train-00140-of-00249.parquet  843 rows  {'real': 258, 'synthetic': 281, 'tampered': 304}
+  [142/284] train-00141-of-00249.parquet  843 rows  {'real': 272, 'synthetic': 272, 'tampered': 299}
+  [143/284] train-00142-of-00249.parquet  843 rows  {'real': 283, 'synthetic': 286, 'tampered': 274}
+  [144/284] train-00143-of-00249.parquet  843 rows  {'real': 276, 'synthetic': 282, 'tampered': 285}
+  [145/284] train-00144-of-00249.parquet  843 rows  {'real': 285, 'synthetic': 286, 'tampered': 272}
+  [146/284] train-00145-of-00249.parquet  843 rows  {'real': 313, 'synthetic': 251, 'tampered': 279}
+  [147/284] train-00146-of-00249.parquet  843 rows  {'real': 289, 'synthetic': 275, 'tampered': 279}
+  [148/284] train-00147-of-00249.parquet  843 rows  {'real': 246, 'synthetic': 299, 'tampered': 298}
+  [149/284] train-00148-of-00249.parquet  843 rows  {'real': 281, 'synthetic': 290, 'tampered': 272}
+  [150/284] train-00149-of-00249.parquet  843 rows  {'real': 296, 'synthetic': 251, 'tampered': 296}
+  [151/284] train-00150-of-00249.parquet  843 rows  {'real': 263, 'synthetic': 300, 'tampered': 280}
+  [152/284] train-00151-of-00249.parquet  843 rows  {'real': 284, 'synthetic': 280, 'tampered': 279}
+  [153/284] train-00152-of-00249.parquet  843 rows  {'real': 288, 'synthetic': 274, 'tampered': 281}
+  [154/284] train-00153-of-00249.parquet  843 rows  {'real': 301, 'synthetic': 269, 'tampered': 273}
+  [155/284] train-00154-of-00249.parquet  843 rows  {'real': 285, 'synthetic': 270, 'tampered': 288}
+  [156/284] train-00155-of-00249.parquet  843 rows  {'real': 278, 'synthetic': 274, 'tampered': 291}
+  [157/284] train-00156-of-00249.parquet  843 rows  {'real': 273, 'synthetic': 297, 'tampered': 273}
+  [158/284] train-00157-of-00249.parquet  843 rows  {'real': 305, 'synthetic': 272, 'tampered': 266}
+  [159/284] train-00158-of-00249.parquet  843 rows  {'real': 290, 'synthetic': 271, 'tampered': 282}
+  [160/284] train-00159-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 266, 'tampered': 291}
+  [161/284] train-00160-of-00249.parquet  843 rows  {'real': 304, 'synthetic': 269, 'tampered': 270}
+  [162/284] train-00161-of-00249.parquet  843 rows  {'real': 263, 'synthetic': 287, 'tampered': 293}
+  [163/284] train-00162-of-00249.parquet  843 rows  {'real': 292, 'synthetic': 275, 'tampered': 276}
+  [164/284] train-00163-of-00249.parquet  843 rows  {'real': 251, 'synthetic': 296, 'tampered': 296}
+  [165/284] train-00164-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 257, 'tampered': 300}
+  [166/284] train-00165-of-00249.parquet  843 rows  {'real': 287, 'synthetic': 292, 'tampered': 264}
+  [167/284] train-00166-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 278, 'tampered': 271}
+  [168/284] train-00167-of-00249.parquet  843 rows  {'real': 290, 'synthetic': 263, 'tampered': 290}
+  [169/284] train-00168-of-00249.parquet  843 rows  {'real': 313, 'synthetic': 266, 'tampered': 264}
+  [170/284] train-00169-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 277, 'tampered': 280}
+  [171/284] train-00170-of-00249.parquet  843 rows  {'real': 311, 'synthetic': 257, 'tampered': 275}
+  [172/284] train-00171-of-00249.parquet  843 rows  {'real': 298, 'synthetic': 273, 'tampered': 272}
+  [173/284] train-00172-of-00249.parquet  843 rows  {'real': 281, 'synthetic': 293, 'tampered': 269}
+  [174/284] train-00173-of-00249.parquet  843 rows  {'real': 280, 'synthetic': 276, 'tampered': 287}
+  [175/284] train-00174-of-00249.parquet  843 rows  {'real': 254, 'synthetic': 275, 'tampered': 314}
+  [176/284] train-00175-of-00249.parquet  843 rows  {'real': 282, 'synthetic': 301, 'tampered': 260}
+  [177/284] train-00176-of-00249.parquet  843 rows  {'real': 275, 'synthetic': 267, 'tampered': 301}
+  [178/284] train-00177-of-00249.parquet  843 rows  {'real': 251, 'synthetic': 287, 'tampered': 305}
+  [179/284] train-00178-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 269, 'tampered': 280}
+  [180/284] train-00179-of-00249.parquet  843 rows  {'real': 266, 'synthetic': 291, 'tampered': 286}
+  [181/284] train-00180-of-00249.parquet  843 rows  {'real': 288, 'synthetic': 269, 'tampered': 286}
+  [182/284] train-00181-of-00249.parquet  843 rows  {'real': 289, 'synthetic': 293, 'tampered': 261}
+  [183/284] train-00182-of-00249.parquet  843 rows  {'real': 283, 'synthetic': 286, 'tampered': 274}
+  [184/284] train-00183-of-00249.parquet  843 rows  {'real': 283, 'synthetic': 271, 'tampered': 289}
+  [185/284] train-00184-of-00249.parquet  843 rows  {'real': 274, 'synthetic': 269, 'tampered': 300}
+  [186/284] train-00185-of-00249.parquet  843 rows  {'real': 266, 'synthetic': 268, 'tampered': 309}
+  [187/284] train-00186-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 298, 'tampered': 251}
+  [188/284] train-00187-of-00249.parquet  843 rows  {'real': 295, 'synthetic': 282, 'tampered': 266}
+  [189/284] train-00188-of-00249.parquet  843 rows  {'real': 280, 'synthetic': 279, 'tampered': 284}
+  [190/284] train-00189-of-00249.parquet  843 rows  {'real': 281, 'synthetic': 259, 'tampered': 303}
+  [191/284] train-00190-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 296, 'tampered': 253}
+  [192/284] train-00191-of-00249.parquet  843 rows  {'real': 290, 'synthetic': 296, 'tampered': 257}
+  [193/284] train-00192-of-00249.parquet  843 rows  {'real': 284, 'synthetic': 279, 'tampered': 280}
+  [194/284] train-00193-of-00249.parquet  843 rows  {'real': 273, 'synthetic': 258, 'tampered': 312}
+  [195/284] train-00194-of-00249.parquet  843 rows  {'real': 304, 'synthetic': 275, 'tampered': 264}
+  [196/284] train-00195-of-00249.parquet  843 rows  {'real': 274, 'synthetic': 286, 'tampered': 283}
+  [197/284] train-00196-of-00249.parquet  843 rows  {'real': 264, 'synthetic': 284, 'tampered': 295}
+  [198/284] train-00197-of-00249.parquet  843 rows  {'real': 275, 'synthetic': 288, 'tampered': 280}
+  [199/284] train-00198-of-00249.parquet  843 rows  {'real': 278, 'synthetic': 260, 'tampered': 305}
+  [200/284] train-00199-of-00249.parquet  843 rows  {'real': 261, 'synthetic': 280, 'tampered': 302}
+  [201/284] train-00200-of-00249.parquet  843 rows  {'real': 280, 'synthetic': 293, 'tampered': 270}
+  [202/284] train-00201-of-00249.parquet  843 rows  {'real': 269, 'synthetic': 280, 'tampered': 294}
+  [203/284] train-00202-of-00249.parquet  843 rows  {'real': 275, 'synthetic': 267, 'tampered': 301}
+  [204/284] train-00203-of-00249.parquet  843 rows  {'real': 289, 'synthetic': 266, 'tampered': 288}
+  [205/284] train-00204-of-00249.parquet  843 rows  {'real': 279, 'synthetic': 291, 'tampered': 273}
+  [206/284] train-00205-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 284, 'tampered': 265}
+  [207/284] train-00206-of-00249.parquet  843 rows  {'real': 273, 'synthetic': 288, 'tampered': 282}
+  [208/284] train-00207-of-00249.parquet  843 rows  {'real': 282, 'synthetic': 288, 'tampered': 273}
+  [209/284] train-00208-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 262, 'tampered': 295}
+  [210/284] train-00209-of-00249.parquet  843 rows  {'real': 274, 'synthetic': 270, 'tampered': 299}
+  [211/284] train-00210-of-00249.parquet  843 rows  {'real': 286, 'synthetic': 266, 'tampered': 291}
+  [212/284] train-00211-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 257, 'tampered': 292}
+  [213/284] train-00212-of-00249.parquet  843 rows  {'real': 261, 'synthetic': 287, 'tampered': 295}
+  [214/284] train-00213-of-00249.parquet  843 rows  {'real': 259, 'synthetic': 310, 'tampered': 274}
+  [215/284] train-00214-of-00249.parquet  843 rows  {'real': 288, 'synthetic': 270, 'tampered': 285}
+  [216/284] train-00215-of-00249.parquet  843 rows  {'real': 278, 'synthetic': 303, 'tampered': 262}
+  [217/284] train-00216-of-00249.parquet  843 rows  {'real': 265, 'synthetic': 279, 'tampered': 299}
+  [218/284] train-00217-of-00249.parquet  843 rows  {'real': 274, 'synthetic': 310, 'tampered': 259}
+  [219/284] train-00218-of-00249.parquet  843 rows  {'real': 268, 'synthetic': 280, 'tampered': 295}
+  [220/284] train-00219-of-00249.parquet  843 rows  {'real': 277, 'synthetic': 268, 'tampered': 298}
+  [221/284] train-00220-of-00249.parquet  843 rows  {'real': 282, 'synthetic': 304, 'tampered': 257}
+  [222/284] train-00221-of-00249.parquet  843 rows  {'real': 270, 'synthetic': 302, 'tampered': 271}
+  [223/284] train-00222-of-00249.parquet  843 rows  {'real': 291, 'synthetic': 272, 'tampered': 280}
+  [224/284] train-00223-of-00249.parquet  843 rows  {'real': 292, 'synthetic': 288, 'tampered': 263}
+  [225/284] train-00224-of-00249.parquet  843 rows  {'real': 276, 'synthetic': 303, 'tampered': 264}
+  [226/284] train-00225-of-00249.parquet  843 rows  {'real': 289, 'synthetic': 259, 'tampered': 295}
+  [227/284] train-00226-of-00249.parquet  843 rows  {'real': 272, 'synthetic': 281, 'tampered': 290}
+  [228/284] train-00227-of-00249.parquet  843 rows  {'real': 269, 'synthetic': 293, 'tampered': 281}
+  [229/284] train-00228-of-00249.parquet  843 rows  {'real': 276, 'synthetic': 308, 'tampered': 259}
+  [230/284] train-00229-of-00249.parquet  843 rows  {'real': 300, 'synthetic': 265, 'tampered': 278}
+  [231/284] train-00230-of-00249.parquet  843 rows  {'real': 270, 'synthetic': 292, 'tampered': 281}
+  [232/284] train-00231-of-00249.parquet  843 rows  {'real': 281, 'synthetic': 275, 'tampered': 287}
+  [233/284] train-00232-of-00249.parquet  843 rows  {'real': 272, 'synthetic': 269, 'tampered': 302}
+  [234/284] train-00233-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 300, 'tampered': 249}
+  [235/284] train-00234-of-00249.parquet  843 rows  {'real': 306, 'synthetic': 272, 'tampered': 265}
+  [236/284] train-00235-of-00249.parquet  843 rows  {'real': 288, 'synthetic': 263, 'tampered': 292}
+  [237/284] train-00236-of-00249.parquet  843 rows  {'real': 276, 'synthetic': 288, 'tampered': 279}
+  [238/284] train-00237-of-00249.parquet  843 rows  {'real': 297, 'synthetic': 283, 'tampered': 263}
+  [239/284] train-00238-of-00249.parquet  843 rows  {'real': 279, 'synthetic': 281, 'tampered': 283}
+  [240/284] train-00239-of-00249.parquet  843 rows  {'real': 288, 'synthetic': 283, 'tampered': 272}
+  [241/284] train-00240-of-00249.parquet  843 rows  {'real': 271, 'synthetic': 269, 'tampered': 303}
+  [242/284] train-00241-of-00249.parquet  843 rows  {'real': 305, 'synthetic': 283, 'tampered': 255}
+  [243/284] train-00242-of-00249.parquet  843 rows  {'real': 293, 'synthetic': 268, 'tampered': 282}
+  [244/284] train-00243-of-00249.parquet  843 rows  {'real': 297, 'synthetic': 278, 'tampered': 268}
+  [245/284] train-00244-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 297, 'tampered': 252}
+  [246/284] train-00245-of-00249.parquet  843 rows  {'real': 292, 'synthetic': 260, 'tampered': 291}
+  [247/284] train-00246-of-00249.parquet  843 rows  {'real': 293, 'synthetic': 280, 'tampered': 270}
+  [248/284] train-00247-of-00249.parquet  843 rows  {'real': 282, 'synthetic': 296, 'tampered': 265}
+  [249/284] train-00248-of-00249.parquet  843 rows  {'real': 294, 'synthetic': 280, 'tampered': 269}
+  [250/284] validation-00000-of-00034.parquet  883 rows  {'real': 314, 'synthetic': 272, 'tampered': 297}
+  [251/284] validation-00001-of-00034.parquet  883 rows  {'real': 284, 'synthetic': 290, 'tampered': 309}
+  [252/284] validation-00002-of-00034.parquet  883 rows  {'real': 292, 'synthetic': 307, 'tampered': 284}
+  [253/284] validation-00003-of-00034.parquet  883 rows  {'real': 302, 'synthetic': 292, 'tampered': 289}
+  [254/284] validation-00004-of-00034.parquet  883 rows  {'real': 312, 'synthetic': 285, 'tampered': 286}
+  [255/284] validation-00005-of-00034.parquet  883 rows  {'real': 282, 'synthetic': 301, 'tampered': 300}
+  [256/284] validation-00006-of-00034.parquet  883 rows  {'real': 314, 'synthetic': 282, 'tampered': 287}
+  [257/284] validation-00007-of-00034.parquet  883 rows  {'real': 309, 'synthetic': 284, 'tampered': 290}
+  [258/284] validation-00008-of-00034.parquet  883 rows  {'real': 295, 'synthetic': 313, 'tampered': 275}
+  [259/284] validation-00009-of-00034.parquet  883 rows  {'real': 300, 'synthetic': 289, 'tampered': 294}
+  [260/284] validation-00010-of-00034.parquet  883 rows  {'real': 292, 'synthetic': 301, 'tampered': 290}
+  [261/284] validation-00011-of-00034.parquet  883 rows  {'real': 303, 'synthetic': 279, 'tampered': 301}
+  [262/284] validation-00012-of-00034.parquet  882 rows  {'real': 285, 'synthetic': 288, 'tampered': 309}
+  [263/284] validation-00013-of-00034.parquet  882 rows  {'real': 320, 'synthetic': 279, 'tampered': 283}
+  [264/284] validation-00014-of-00034.parquet  882 rows  {'real': 265, 'synthetic': 314, 'tampered': 303}
+  [265/284] validation-00015-of-00034.parquet  882 rows  {'real': 307, 'synthetic': 284, 'tampered': 291}
+  [266/284] validation-00016-of-00034.parquet  882 rows  {'real': 316, 'synthetic': 301, 'tampered': 265}
+  [267/284] validation-00017-of-00034.parquet  882 rows  {'real': 297, 'synthetic': 285, 'tampered': 300}
+  [268/284] validation-00018-of-00034.parquet  882 rows  {'real': 275, 'synthetic': 313, 'tampered': 294}
+  [269/284] validation-00019-of-00034.parquet  882 rows  {'real': 303, 'synthetic': 281, 'tampered': 298}
+  [270/284] validation-00020-of-00034.parquet  882 rows  {'real': 308, 'synthetic': 292, 'tampered': 282}
+  [271/284] validation-00021-of-00034.parquet  882 rows  {'real': 269, 'synthetic': 294, 'tampered': 319}
+  [272/284] validation-00022-of-00034.parquet  882 rows  {'real': 302, 'synthetic': 263, 'tampered': 317}
+  [273/284] validation-00023-of-00034.parquet  882 rows  {'real': 297, 'synthetic': 293, 'tampered': 292}
+  [274/284] validation-00024-of-00034.parquet  882 rows  {'real': 286, 'synthetic': 306, 'tampered': 290}
+  [275/284] validation-00025-of-00034.parquet  882 rows  {'real': 287, 'synthetic': 313, 'tampered': 282}
+  [276/284] validation-00026-of-00034.parquet  882 rows  {'real': 279, 'synthetic': 320, 'tampered': 283}
+  [277/284] validation-00027-of-00034.parquet  882 rows  {'real': 275, 'synthetic': 303, 'tampered': 304}
+  [278/284] validation-00028-of-00034.parquet  882 rows  {'real': 290, 'synthetic': 292, 'tampered': 300}
+  [279/284] validation-00029-of-00034.parquet  882 rows  {'real': 315, 'synthetic': 277, 'tampered': 290}
+  [280/284] validation-00030-of-00034.parquet  882 rows  {'real': 294, 'synthetic': 299, 'tampered': 289}
+  [281/284] validation-00031-of-00034.parquet  882 rows  {'real': 283, 'synthetic': 282, 'tampered': 317}
+  [282/284] validation-00032-of-00034.parquet  882 rows  {'real': 279, 'synthetic': 312, 'tampered': 291}
+  [283/284] validation-00033-of-00034.parquet  882 rows  {'real': 269, 'synthetic': 314, 'tampered': 299}
+  [284/284] train-00000-of-00249.parquet  844 rows  {'real': 289, 'synthetic': 287, 'tampered': 268}
+
+[done] 284/284 shards good, 240844 rows
+[done] labels: {'real': 80289, 'synthetic': 80287, 'tampered': 80268}
+=== all done 2026-08-19T13:47:28+02:00 ===

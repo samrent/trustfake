@@ -1,0 +1,6 @@
+target tf_efficientnet_b0.ns_jft_in1k: head fitted on 6756 imgs, train acc 0.8985; transform ['Resize', 'CenterCrop', 'MaybeToTensor']
+  predictions_tf_efficientnet_b0_calib_clean: n=4684 in 3s
+  predictions_tf_efficientnet_b0_test_clean: n=15316 in 9s
+  predictions_tf_efficientnet_b0_test_ace_eps0.0005: n=15316 in 41s  eff_eps=0.00040 label_preserved=1.0000
+  predictions_tf_efficientnet_b0_test_ace_eps0.002: n=15316 in 54s  eff_eps=0.00102 label_preserved=1.0000
+  predictions_tf_efficientnet_b0_test_ace_eps0.005: n=15316 in 62s  eff_eps=0.00175 label_preserved=1.0000

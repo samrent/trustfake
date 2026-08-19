@@ -1,0 +1,21 @@
+# Bulk data and weights: reproducible from the committed sidecars, seeds and manifests.
+*.parquet
+*.npy
+*.npz
+*.pt
+*.pth
+.venv/
+__pycache__/
+*.pyc
+
+# Third-party material that is not ours to redistribute:
+#   ledda.pdf / ledda.txt / ace.txt  -- copyrighted papers
+#   proposal_extracted.txt           -- the PIs' unpublished project proposal
+# The findings drawn from them live in the module docstrings and the README instead.
+notes/
+
+# Personal build planning: schedule, deadlines and positioning. Stays on the box.
+BUILD.md
+
+# Transient
+runs/demo.log

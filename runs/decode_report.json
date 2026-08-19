@@ -1,0 +1,11 @@
+{
+  "written": 11635,
+  "skipped": 5182,
+  "failed": 0,
+  "seconds": 56.6,
+  "img_per_s": 205.6,
+  "short_side": 256,
+  "quality": 95,
+  "workers": 4,
+  "failures": []
+}

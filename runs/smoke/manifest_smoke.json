@@ -1,0 +1,54 @@
+{
+  "manifest_sha256": "f4396a0d79df1b162ea17427cf1dd15b8a8400910a01779dbe174afe6b1b59bc",
+  "rows": 2909,
+  "profile": "smoke",
+  "seed": 0,
+  "balance_policy": "binary_5050",
+  "split_provenance": "SID-Set validation split, held-out slice (official test split withheld by authors)",
+  "leakage_rule": "fit from train shards only; calib and test from disjoint validation shards",
+  "key": "uid = '<source_split>:<img_id>'; img_id alone is NOT unique across splits",
+  "img_id_collisions_in_manifest": 3,
+  "img_id_collisions_in_full_dataset": 8634,
+  "cache_policy": "short-side 256, JPEG q95 -- lossy, unsuitable for frequency-domain detectors; raw parquet retained for that reason",
+  "splits": {
+    "fit": {
+      "n": 1145,
+      "shards": [
+        "train-00000-of-00249.parquet",
+        "train-00001-of-00249.parquet"
+      ],
+      "by_label": {
+        "real": 573,
+        "full_synthetic": 286,
+        "tampered": 286
+      },
+      "prior_fake": 0.4995633187772926
+    },
+    "calib": {
+      "n": 584,
+      "shards": [
+        "validation-00002-of-00034.parquet"
+      ],
+      "by_label": {
+        "real": 292,
+        "full_synthetic": 146,
+        "tampered": 146
+      },
+      "prior_fake": 0.5
+    },
+    "test": {
+      "n": 1180,
+      "shards": [
+        "validation-00011-of-00034.parquet",
+        "validation-00025-of-00034.parquet"
+      ],
+      "by_label": {
+        "real": 590,
+        "full_synthetic": 295,
+        "tampered": 295
+      },
+      "prior_fake": 0.5
+    }
+  },
+  "regenerate": "python -m src.manifest --profile smoke --seed 0 --balance binary_5050 --out /home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/runs/smoke/manifest_smoke.parquet"
+}

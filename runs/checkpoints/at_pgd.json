@@ -1,0 +1,114 @@
+{
+  "model_id": "effb0_at_pgd",
+  "backbone": "tf_efficientnet_b0.ns_jft_in1k",
+  "method": "at_pgd",
+  "epoch": 9,
+  "selected_on": "fit_val_robust_pgd",
+  "selection_value": 0.735871505056514,
+  "eps": 0.00784313725,
+  "alpha": 0.00196078431372549,
+  "inner_steps": 7,
+  "beta": null,
+  "epochs": 12,
+  "batch": 32,
+  "lr": 0.02,
+  "seed": 0,
+  "optimizer_steps": 5676,
+  "n_fit_train": 15136,
+  "n_fit_val": 1681,
+  "manifest": "runs/manifest_v2.parquet",
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 1.1221812267258102,
+      "eps": 0.0019607843125,
+      "fit_val_clean": 0.8548483045806068,
+      "fit_val_robust_pgd": 0.7168352171326592,
+      "selected_on": 0.7168352171326592,
+      "lr": 0.005606141108757311,
+      "minutes": 2.82
+    },
+    {
+      "epoch": 2,
+      "loss": 0.5980937308287267,
+      "eps": 0.003921568625,
+      "fit_val_clean": 0.8304580606781677,
+      "fit_val_robust_pgd": 0.711481261154075,
+      "selected_on": 0.711481261154075,
+      "lr": 0.015212274360594462,
+      "minutes": 5.54
+    },
+    {
+      "epoch": 3,
+      "loss": 0.5721958068536149,
+      "eps": 0.0058823529375,
+      "fit_val_clean": 0.8233194527067222,
+      "fit_val_robust_pgd": 0.7209994051160024,
+      "selected_on": 0.7209994051160024,
+      "lr": 0.019999997276918167,
+      "minutes": 8.15
+    },
+    {
+      "epoch": 4,
+      "loss": 0.5658251633729794,
+      "eps": 0.00784313725,
+      "fit_val_clean": 0.8233194527067222,
+      "fit_val_robust_pgd": 0.6900654372397382,
+      "selected_on": 0.6900654372397382,
+      "lr": 0.019394402021890616,
+      "minutes": 10.85
+    },
+    {
+      "epoch": 5,
+      "loss": 0.5333884064163265,
+      "eps": 0.00784313725,
+      "fit_val_clean": 0.8007138607971446,
+      "fit_val_robust_pgd": 0.726948245092207,
+      "selected_on": 0.726948245092207,
+      "lr": 0.01765570806100583,
+      "minutes": 13.88
+    },
+    {
+      "epoch": 6,
+      "loss": 0.5110302564961714,
+      "eps": 0.00784313725,
+      "fit_val_clean": 0.8072575847709696,
+      "fit_val_robust_pgd": 0.7305175490779298,
+      "selected_on": 0.7305175490779298,
+      "lr": 0.014993627546336465,
+      "minutes": 17.75
+    },
+    {
+      "epoch": 7,
+      "loss": 0.4907479271702232,
+      "eps": 0.00784313725,
+      "fit_val_clean": 0.8251041046995836,
+      "fit_val_robust_pgd": 0.7245687091017252,
+      "selected_on": 0.7245687091017252,
+      "lr": 0.011729246676075744,
+      "minutes": 21.39
+    },
+    {
+      "epoch": 8,
+      "loss": 0.46956770008638593,
+      "eps": 0.00784313725,
+      "fit_val_clean": 0.8239143367043427,
+      "fit_val_robust_pgd": 0.7204045211183819,
+      "selected_on": 0.7204045211183819,
+      "lr": 0.008256297960307744,
+      "minutes": 24.92
+    },
+    {
+      "epoch": 9,
+      "loss": 0.4409957931674308,
+      "eps": 0.00784313725,
+      "fit_val_clean": 0.8251041046995836,
+      "fit_val_robust_pgd": 0.735871505056514,
+      "selected_on": 0.735871505056514,
+      "lr": 0.0049936702694183,
+      "minutes": 28.37
+    }
+  ],
+  "wall_clock_min": 28.37,
+  "note": "model selection on a held-out slice of FIT; calib and test never seen"
+}

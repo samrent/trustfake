@@ -1,0 +1,15 @@
+{
+  "model_id": "tf_efficientnet_b0.ns_jft_in1k+linear_probe",
+  "condition": "downscale_0.5",
+  "split": "test",
+  "batch": 32,
+  "seed": 0,
+  "timestamp": "2026-08-19T15:18:42",
+  "n": 15316,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "key": "uid",
+  "attack": "none",
+  "condition_kind": "realistic",
+  "eps_requested": 0.0,
+  "seconds": 17.3
+}

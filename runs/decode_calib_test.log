@@ -1,0 +1,45 @@
+20000 images across 34 shards -> /home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/cache256
+  [ 1/34] validation-00000-of-00034.parquet  +596   skip 0       47.6 img/s
+  [ 2/34] validation-00001-of-00034.parquet  +576   skip 0       93.5 img/s
+  [ 3/34] validation-00002-of-00034.parquet  +588   skip 0      135.7 img/s
+  [ 4/34] validation-00003-of-00034.parquet  +585   skip 0      180.8 img/s
+  [ 5/34] validation-00004-of-00034.parquet  +594   skip 0      146.0 img/s
+  [ 6/34] validation-00005-of-00034.parquet  +559   skip 0      158.8 img/s
+  [ 7/34] validation-00006-of-00034.parquet  +590   skip 0      179.1 img/s
+  [ 8/34] validation-00007-of-00034.parquet  +597   skip 0      202.7 img/s
+  [ 9/34] validation-00008-of-00034.parquet  +600   skip 0      176.0 img/s
+  [10/34] validation-00009-of-00034.parquet  +591   skip 0      179.7 img/s
+  [11/34] validation-00010-of-00034.parquet  +587   skip 0      188.8 img/s
+  [12/34] validation-00011-of-00034.parquet  +590   skip 0      206.0 img/s
+  [13/34] validation-00012-of-00034.parquet  +587   skip 0      189.5 img/s
+  [14/34] validation-00013-of-00034.parquet  +603   skip 0      189.6 img/s
+  [15/34] validation-00014-of-00034.parquet  +564   skip 0      200.9 img/s
+  [16/34] validation-00015-of-00034.parquet  +600   skip 0      212.4 img/s
+  [17/34] validation-00016-of-00034.parquet  +598   skip 0      198.0 img/s
+  [18/34] validation-00017-of-00034.parquet  +589   skip 0      199.1 img/s
+  [19/34] validation-00018-of-00034.parquet  +568   skip 0      204.0 img/s
+  [20/34] validation-00019-of-00034.parquet  +577   skip 0      214.5 img/s
+  [21/34] validation-00020-of-00034.parquet  +612   skip 0      205.2 img/s
+  [22/34] validation-00021-of-00034.parquet  +580   skip 0      205.5 img/s
+  [23/34] validation-00022-of-00034.parquet  +591   skip 0      209.5 img/s
+  [24/34] validation-00023-of-00034.parquet  +586   skip 0      216.6 img/s
+  [25/34] validation-00024-of-00034.parquet  +609   skip 0      209.7 img/s
+  [26/34] validation-00025-of-00034.parquet  +580   skip 0      209.8 img/s
+  [27/34] validation-00026-of-00034.parquet  +596   skip 0      211.2 img/s
+  [28/34] validation-00027-of-00034.parquet  +574   skip 0      218.8 img/s
+  [29/34] validation-00028-of-00034.parquet  +604   skip 0      213.2 img/s
+  [30/34] validation-00029-of-00034.parquet  +605   skip 0      215.4 img/s
+  [31/34] validation-00030-of-00034.parquet  +593   skip 0      211.5 img/s
+  [32/34] validation-00031-of-00034.parquet  +562   skip 0      218.0 img/s
+  [33/34] validation-00032-of-00034.parquet  +584   skip 0      216.9 img/s
+  [34/34] validation-00033-of-00034.parquet  +585   skip 0      214.0 img/s
+{
+  "written": 20000,
+  "skipped": 0,
+  "failed": 0,
+  "seconds": 93.5,
+  "img_per_s": 213.9,
+  "short_side": 256,
+  "quality": 95,
+  "workers": 4
+}

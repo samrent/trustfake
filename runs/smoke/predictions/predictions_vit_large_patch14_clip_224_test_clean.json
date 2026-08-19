@@ -1,0 +1,15 @@
+{
+  "model_id": "vit_large_patch14_clip_224.openai+linear_probe",
+  "manifest_sha": "f4396a0d79df1b162ea17427cf1dd15b8a8400910a01779dbe174afe6b1b59bc",
+  "condition": "clean",
+  "split": "test",
+  "seed": 0,
+  "timestamp": "2026-08-19T13:56:58",
+  "n": 1180,
+  "probe_C": 0.1,
+  "fit_condition": "clean",
+  "fit_n": 1145,
+  "feature_dim": 1024,
+  "key": "uid",
+  "logit_convention": "[0, margin]; softmax -> p(fake) = sigmoid(margin)"
+}
