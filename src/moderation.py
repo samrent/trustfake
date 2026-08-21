@@ -89,7 +89,8 @@ def evaluate_policy(p_fake, y, t_low: float, t_high: float) -> dict:
 
 
 def fit_thresholds(p_fake, y, sla_residual_risk: float = 0.05,
-                   sla_missed_fake: float | None = None, grid: int = 200) -> tuple[float, float]:
+                   sla_missed_fake: float | None = None, grid: int = 200,
+                   min_auto: int | None = None) -> tuple[float, float]:
     """Minimize review rate subject to the residual-risk SLA (and optionally a cap on the
     missed-fake rate), on the CLEAN CALIBRATION split.
 
@@ -105,13 +106,21 @@ def fit_thresholds(p_fake, y, sla_residual_risk: float = 0.05,
     """
     p = np.asarray(p_fake, dtype=np.float64)
     y = np.asarray(y).astype(int)
+    # A residual risk of 0% over 3 auto-decided items is not evidence of a 5% SLA: the
+    # tightest thresholds always "satisfy" any SLA by deciding almost nothing. Require enough
+    # auto-decisions that the SLA could have been violated at all -- 1/sla items is the
+    # coarsest resolution at which the measured rate can even represent the threshold.
+    if min_auto is None:
+        min_auto = int(np.ceil(1.0 / max(sla_residual_risk, 1e-9)))
     qs = np.unique(np.quantile(p, np.linspace(0, 1, grid)))
     best, best_review = (0.0, 1.0), 1.0
     for t_low in qs:
         hi = qs[qs >= t_low]
         for t_high in hi:
             r = evaluate_policy(p, y, t_low, t_high)
-            if r["residual_risk"] > sla_residual_risk:
+            if r["n_auto"] < min_auto:
+                continue
+            if not np.isfinite(r["residual_risk"]) or r["residual_risk"] > sla_residual_risk:
                 continue
             if sla_missed_fake is not None and r["missed_fake_rate"] > sla_missed_fake:
                 continue

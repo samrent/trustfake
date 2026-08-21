@@ -1,13 +1,26 @@
 {
-  "model_id": "tf_efficientnet_b0.ns_jft_in1k+linear_probe",
+  "model_id": "tf_efficientnet_b0",
+  "backbone": "tf_efficientnet_b0.ns_jft_in1k",
   "condition": "clean",
   "split": "calib",
-  "seed": 0,
-  "timestamp": "2026-08-19T13:53:38",
   "n": 4684,
-  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "seconds": 5.6,
   "key": "uid",
-  "attack": "none",
-  "eps_requested": 0.0,
-  "seconds": 2.7
+  "batch": 32,
+  "timestamp": "2026-08-21T15:28:36",
+  "seed": 0,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "provenance": {
+    "kind": "probe",
+    "backbone": "tf_efficientnet_b0.ns_jft_in1k",
+    "C": 0.01,
+    "fit_n": 6756,
+    "feature_dim": 1280,
+    "fit_train_acc": 0.8984606275902901,
+    "features_dir": "/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features"
+  },
+  "attack": "clean",
+  "family": "clean",
+  "direction": "n/a",
+  "eps": 0.0
 }

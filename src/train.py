@@ -230,13 +230,17 @@ def train(method: str, a) -> pathlib.Path:
                 "inner_steps": a.inner_steps if method != "standard" else 0,
                 "beta": a.beta if method == "trades" else None,
                 "epochs": a.epochs, "batch": a.batch, "lr": a.lr, "seed": a.seed,
-                # budget parity is checked against what was SPENT. Recording the planned
-                # figure let a run cut short at epoch 7 claim a 12-epoch budget, which is
-                # exactly the claim the comparison rests on.
-                "optimizer_steps_spent": ep * steps_per_epoch,
+                # Budget parity is judged on steps the RUN spends, which is
+                # epochs_planned * steps_per_epoch once the schedule completes -- not on
+                # steps to the selected epoch, which is a property of model selection and
+                # differs between arms even under a perfectly matched budget. Recording only
+                # one of these invites reading the wrong number as the budget.
+                "optimizer_steps_to_selected_epoch": ep * steps_per_epoch,
                 "optimizer_steps_planned": a.epochs * steps_per_epoch,
                 "steps_per_epoch": steps_per_epoch,
-                "completed_full_schedule": ep == a.epochs,
+                "selected_epoch": ep,
+                "epochs_planned": a.epochs,
+                "is_last_epoch": ep == a.epochs,
                 "n_fit_train": int(len(tr_uid)), "n_fit_val": int(len(va_uid)),
                 "manifest": str(a.manifest), "history": hist,
                 "wall_clock_min": round((time.time() - t0) / 60, 2),

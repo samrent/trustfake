@@ -36,7 +36,11 @@ PRED = ROOT / "runs" / "predictions"
 
 
 def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.Path,
-            batch: int, limit: int | None, pred_dir: pathlib.Path, steps: int | None = None):
+            batch: int, limit: int | None, pred_dir: pathlib.Path, steps: int | None = None,
+            pixel_condition: str | None = None):
+    """attack='clean' + pixel_condition='jpeg_q50' runs a REALISTIC condition; attack=<name>
+    runs an adversarial one. Both land in the same contract through the same code path, which
+    is what makes the clean / realistic / adversarial rows of the WP3 table comparable."""
     t = pq.read_table(manifest, columns=["uid", "img_id", "y_binary", "label", "split"])
     keep = [i for i, s in enumerate(t.column("split").to_pylist()) if s == split]
     if limit:
@@ -46,12 +50,12 @@ def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.P
     y = np.array([t.column("y_binary")[i].as_py() for i in keep], dtype=np.int8)
     lab = np.array([t.column("label")[i].as_py() for i in keep], dtype=np.int8)
 
-    cond = "clean" if attack == "clean" else condition_name(attack, eps=eps, steps=steps)
+    cond = (pixel_condition or "clean") if attack == "clean" else condition_name(attack, eps=eps, steps=steps)
     spec = ATTACKS.get(attack)
     kw = {} if attack == "clean" else {**spec["defaults"],
                                        **{k: v for k, v in (("eps", eps), ("steps", steps)) if v is not None}}
 
-    dl = DataLoader(CachedImages(uids, det.transform, "clean", CACHE), batch_size=batch,
+    dl = DataLoader(CachedImages(uids, det.transform, pixel_condition or "clean", CACHE), batch_size=batch,
                     num_workers=4, pin_memory=False, shuffle=False)
     logits = np.empty((len(uids), 2), dtype=np.float32)
     effs, preserved, t0 = [], [], time.time()
@@ -115,6 +119,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--model", default="probe:tf_efficientnet_b0.ns_jft_in1k")
     ap.add_argument("--attacks", nargs="*", default=["clean", "fgsm", "pgd_linf", "ace", "overconf", "underconf"])
+    ap.add_argument("--conditions", nargs="*", default=[],
+                    help="realistic (pixel-space) conditions: jpeg_q50, downscale_0.5, webp, squarecrop")
     ap.add_argument("--eps", type=float, default=None, help="override the attack default")
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--split", default="test")
@@ -138,6 +144,9 @@ def main() -> None:
     print(f"detector {det.model_id} ({det.provenance['kind']})")
     for atk in a.attacks:
         run_one(det, a.split, atk, a.eps, a.manifest, a.batch, a.limit, a.pred_dir, a.steps)
+    for cond in a.conditions:
+        run_one(det, a.split, "clean", None, a.manifest, a.batch, a.limit, a.pred_dir,
+                pixel_condition=cond)
 
 
 if __name__ == "__main__":

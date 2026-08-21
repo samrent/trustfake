@@ -194,8 +194,11 @@ def aurc_optimal_empirical(correct, weights: str = "block") -> float:
 def eaurc(conf, correct, weights: str = "block") -> float:
     """Excess AURC = aurc - aurc_optimal_empirical. Zero for a perfect ranker, by test 1.
 
-    Isolates ranking quality from the error rate, so two models with different accuracy
-    can be compared on how well their confidence orders their own mistakes.
+    Isolates ranking quality from the error rate ONLY PARTIALLY, and the residual dependence
+    is large enough to mislead: at a fixed AUROC(failure) of ~0.921, E-AURC still moves from
+    0.0077 to 0.0227 as the error rate changes. Use it BESIDE AURC as a within-model
+    diagnostic; carry cross-model claims on AUROC(failure), which is rate-free by
+    construction.
     """
     return aurc(conf, correct, weights) - aurc_optimal_empirical(correct, weights)
 

@@ -89,6 +89,11 @@ def main() -> None:
             "condition": a.condition, "split": split, "seed": a.seed,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "n": int(y.size), "probe_C": best, "fit_condition": a.fit_condition,
+            # A probe's logits are a deterministic linear map of CACHED features, so no batch
+            # is used here. The batch that shaped the numbers was the feature-extraction one;
+            # record which, and say so, rather than leaving the field absent and unexplained.
+            "logits_source": "cached_features",
+            "batch": meta.get("batch"), "feature_extraction_batch": meta.get("batch"),
             "fit_n": int(xf.shape[0]), "feature_dim": int(xf.shape[1]),
             "key": "uid", "logit_convention": "[0, margin]; softmax -> p(fake) = sigmoid(margin)",
         }, indent=2) + "\n")
