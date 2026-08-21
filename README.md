@@ -241,6 +241,69 @@ work has no residual risk to measure, and 0.0 makes total refusal look like perf
 be): image, label, p(fake), MSP confidence, decision band, verdict, plus sample buttons that draw
 from the **test** split only and reveal ground truth after the verdict.
 
+## WP3 / D3 — comparative results
+
+All three arms share one initialisation (`phase1_init.pt`) and one 12-epoch schedule on an
+identical data protocol and evaluation, so a difference between rows is a difference of METHOD,
+not of budget. Each model's temperature is fitted on ITS OWN clean calib split and frozen before
+any attacked row is scored. Cells: **accuracy | AUROC(failure) | AURC x10^-3**.
+
+| condition | standard | PGD-AT (2/255) | TRADES (2/255) |
+|---|---|---|---|
+| clean | 0.8435 / 0.7945 / 52.5 | 0.8177 / 0.8006 / 62.3 | 0.7877 / 0.7761 / 82.5 |
+| realistic: JPEG q50 | 0.7198 / 0.7188 / 140.4 | 0.8169 / 0.7997 / 62.8 | 0.7876 / 0.7730 / 83.4 |
+| realistic: 0.5x resize | 0.7987 / 0.7793 / 75.7 | 0.7857 / 0.7853 / 80.6 | 0.7649 / 0.7586 / 100.9 |
+| adversarial: PGD 2/255 (label) | **0.0000** / nan / 1000.0 | 0.7192 / 0.7054 / 146.8 | 0.7062 / 0.6799 / 170.3 |
+| adversarial: ACE uint8 (confidence) | 0.8435 / **0.1093** / 329.5 | 0.8177 / 0.6659 / 94.5 | 0.7877 / 0.6541 / 117.9 |
+| adversarial: over-confidence (label-free) | 0.8435 / 0.4135 / 194.2 | 0.8177 / 0.7770 / 68.8 | 0.7877 / **0.7789** / 81.3 |
+
+PGD uses the standard step rule `alpha = 2.5*eps/steps` (Madry; the RobustBench convention),
+recorded in every sidecar so it can never be inferred wrongly from the epsilon. The earlier
+default, `max(eps/4, 1/255)`, was a *stronger* attack — alpha = eps/2 crosses the ball in two
+steps — so it understated the defenses rather than flattering them. Re-running under the
+convention moved robust accuracy by 0.0002: the conclusions do not depend on the step rule.
+
+Fitted temperatures: standard **3.338**, PGD-AT 0.903, TRADES 0.757. The undefended model needs
+heavy smoothing; the defended ones are close to calibrated already.
+
+Four results, and the third contradicts the hypothesis we set out to test:
+
+1. **Robust training works on the label axis.** PGD at 2/255 takes the standard model to
+   accuracy **0.0000** — AUROC(failure) is `nan` because there are no correct predictions left
+   to rank, which is the empty-case guard firing rather than a bug. Both defenses hold ~0.71.
+2. **It costs clean accuracy**: -2.6 pp for PGD-AT, -5.6 pp for TRADES, and the standard model
+   has the best clean AURC (52.5) of the three. The trade-off is real and should be stated.
+3. **It also protects CONFIDENCE, which we did not expect.** Under the confidence attack,
+   AUROC(failure) collapses to 0.109 undefended but holds at 0.666 / 0.654 with AT/TRADES. Under
+   the label-free over-confidence attack the defended models barely move at all
+   (0.801 -> 0.777, 0.776 -> 0.779). The Ledda et al. hypothesis — that adversarial training
+   protects against under-confidence but not over-confidence attacks, because the
+   entropy-minimising region does not lie on the decision boundary — does **not** reproduce in
+   this setting. That is a result worth putting to the PIs rather than filing away.
+4. **Realistic robustness comes along for free**: JPEG q50 costs the standard model 12 pp of
+   accuracy and costs PGD-AT essentially nothing (0.8177 -> 0.8169).
+
+## WP4 / D4 — the same three models through the moderation layer
+
+Policy fitted per model on its own clean calib at a 5% residual-risk SLA, then frozen.
+
+| model | clean residual risk | review rate | PGD | ACE uint8 | over-confidence |
+|---|---|---|---|---|---|
+| standard | 5.47% | 27.1% | **100.00%** | 19.18% | 15.65% (coverage -> **100%**) |
+| PGD-AT | 4.72% | 50.1% | 13.01% | 8.05% | 12.63% |
+| TRADES | 4.98% | 55.4% | 13.53% | 8.47% | 12.89% |
+
+The deployment reading: adversarial training takes residual risk under a label attack from
+**100% to 13%** and under a confidence attack from 19.2% to 8.1%, and it holds the SLA under
+JPEG q50 (11.17% -> 4.74%). **The price is the review bill roughly doubling**, 27% -> 50%, which
+is a moderation-staffing cost, not an accuracy cost, and it belongs in the same sentence as the
+safety gain.
+
+The residual threat is the **label-free over-confidence attack**: it is the only one that drives
+coverage UP (to 100% undefended, 80.8% with AT). It does not make the system abstain — it stops
+the system abstaining, by making it confidently wrong. It also needs no ground-truth labels, so
+it is the one a real attacker can actually run.
+
 ## Batch size is part of the experimental condition
 
 EfficientNet under cuDNN is not bit-identical across batch shapes. Regenerating the clean
@@ -272,6 +335,8 @@ src/score.py      the condition table, temperature frozen on calib
 src/figures.py    fig1 risk-coverage, fig2 confidence histograms
 src/run_all.py    driver; --smoke is the offline pre-flight
 src/baselines.py  trivial metadata baselines; the number every accuracy is read against
+src/compare.py    the D3 comparative table across defenses x conditions
+src/verify.py     artifact self-consistency check; run it before believing any table
 tests/            19 tests (9 metrics + 10 attacks/hardening), no GPU, no data, no network, <2 s
 ```
 

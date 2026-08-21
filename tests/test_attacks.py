@@ -108,10 +108,14 @@ def test_underconfidence_lowers_belief_in_the_clean_prediction(setup):
     which max-softmax climbs back up (measured: 0.5403 -> 0.5529 on this fixture). The
     quantity the attack actually controls is p(clean-predicted class), and that must fall.
 
-    The flip is not a bug, it is the documented asymmetry: unlike over-confidence, this
-    direction is NOT label-preserving by construction, so the runner must MEASURE label
-    preservation rather than assume it. This test keeps that visible."""
+    The objective is KL to the UNIFORM distribution (Ledda et al. Eq. 11), which is an
+    ATTRACTOR at p = 1/K, not an unbounded descent. So the right assertions are that belief
+    moves TOWARD 1/K, not that it decreases monotonically per sample: a point that starts at
+    0.5112 can land at 0.5114 on the far side of the attractor, and that is correct behaviour.
+    Per-sample monotonicity was a property of the earlier cross-entropy-ascent implementation,
+    which had no stopping point and turned "under-confidence" into "label flip"."""
     m, x, y = setup
+    K = 2
     with torch.no_grad():
         p0 = m(x).softmax(1)
         pred0 = p0.argmax(1)
@@ -121,9 +125,15 @@ def test_underconfidence_lowers_belief_in_the_clean_prediction(setup):
     belief0 = p0.gather(1, pred0[:, None]).squeeze(1)
     belief1 = p1.gather(1, pred0[:, None]).squeeze(1)
     assert belief1.mean() < belief0.mean(), "under-confidence did not reduce p(clean pred)"
-    assert (belief1 <= belief0 + 1e-6).all()
-    flipped = (p1.argmax(1) != pred0).float().mean()
-    assert flipped > 0, "no label flipped: this direction is expected to be able to flip"
+    # EVERY sample is pulled into a tight band around the uniform point. A per-sample
+    # monotone bound would be wrong: a signed step of size alpha cannot land exactly on the
+    # attractor, so a point that starts within that jitter of 1/K (distance ~0.011 here)
+    # cannot get closer. The band, and the shrinking mean distance, are the real properties.
+    d0, d1 = (belief0 - 1.0 / K).abs(), (belief1 - 1.0 / K).abs()
+    assert d1.max() < 0.02, f"a sample escaped the uniform band: {d1.max():.4f}"
+    assert d1.mean() < 0.5 * d0.mean(), "distance to uniform did not at least halve"
+    # and confidence collapses toward chance rather than overshooting into the other class
+    assert p1.max(1).values.mean() < 0.55
 
 
 def test_confidence_attacks_are_label_free(setup):

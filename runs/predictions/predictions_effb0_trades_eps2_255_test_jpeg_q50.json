@@ -1,13 +1,13 @@
 {
   "model_id": "effb0_trades_eps2_255",
   "backbone": "tf_efficientnet_b0.ns_jft_in1k",
-  "condition": "clean",
-  "split": "calib",
-  "n": 4684,
-  "seconds": 3.4,
+  "condition": "jpeg_q50",
+  "split": "test",
+  "n": 15316,
+  "seconds": 8.4,
   "key": "uid",
   "batch": 32,
-  "timestamp": "2026-08-21T15:43:51",
+  "timestamp": "2026-08-21T15:44:12",
   "seed": 0,
   "manifest_sha": "da5c6f93fba7ac860460835ed13774ec04a1d5260dabec2e2352f591a8a440ae",
   "provenance": {
@@ -99,8 +99,8 @@
     "wall_clock_min": 15.33,
     "note": "model selection on a held-out slice of FIT; calib and test never seen"
   },
-  "attack": "clean",
-  "family": "clean",
+  "attack": "jpeg_q50",
+  "family": "realistic",
   "direction": "n/a",
   "eps": 0.0
 }

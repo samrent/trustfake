@@ -1,0 +1,6 @@
+detector effb0_standard_eps2_255 (checkpoint)
+  predictions_effb0_standard_eps2_255_test_pgd_linf_eps0.00784_s10  15316 imgs   170s  eff_eps 0.00784  preserved 0.1565
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_pgd_linf_eps0.00784_s10  15316 imgs   190s  eff_eps 0.00784  preserved 0.9015
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_pgd_linf_eps0.00784_s10  15316 imgs   204s  eff_eps 0.00784  preserved 0.9185

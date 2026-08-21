@@ -107,6 +107,10 @@ def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.P
         side |= {"eps_effective_mean": float(e.mean()), "eps_effective_max": float(e.max()),
                  "frac_perturbed": float((e > 0).mean()),
                  "label_preservation": float(np.mean(preserved)), "attack_kwargs": kw}
+        if attack in ("pgd_linf", "pgd_l2"):
+            from .attack_suite import default_alpha
+            side["alpha"] = kw.get("alpha") or default_alpha(kw["eps"], kw.get("steps", 10))
+            side["alpha_rule"] = "2.5*eps/steps (Madry; RobustBench convention)"
     (pred_dir / f"{stem}.json").write_text(json.dumps(side, indent=2, default=str) + "\n")
     msg = f"  {stem:<62} {len(uids):>6} imgs {el:>5.0f}s"
     if effs:

@@ -10,3 +10,30 @@ detector effb0_standard_eps2_255 (checkpoint)
 detector effb0_standard_eps2_255 (checkpoint)
   predictions_effb0_standard_eps2_255_test_overconf_eps0.0157_s20  15316 imgs   351s  eff_eps 0.01006  preserved 1.0000
 detector effb0_standard_eps2_255 (checkpoint)
+  predictions_effb0_standard_eps2_255_test_pgd_linf_eps0.00784_s10  15316 imgs   213s  eff_eps 0.00784  preserved 0.1565
+=== at_pgd_eps2_255 ===
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_calib_clean                    4684 imgs     3s
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_clean                    15316 imgs     9s
+  predictions_effb0_at_pgd_eps2_255_test_jpeg_q50                 15316 imgs     8s
+  predictions_effb0_at_pgd_eps2_255_test_downscale_0.5            15316 imgs     8s
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_ace_uint8_eps0.005       15316 imgs    29s  eff_eps 0.00375  preserved 1.0000
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_overconf_eps0.0157_s20   15316 imgs   433s  eff_eps 0.01570  preserved 1.0000
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_pgd_linf_eps0.00784_s10  15316 imgs   221s  eff_eps 0.00784  preserved 0.9013
+=== trades_eps2_255 ===
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_calib_clean                    4684 imgs     3s
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_clean                    15316 imgs     9s
+  predictions_effb0_trades_eps2_255_test_jpeg_q50                 15316 imgs     8s
+  predictions_effb0_trades_eps2_255_test_downscale_0.5            15316 imgs     8s
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_ace_uint8_eps0.005       15316 imgs    30s  eff_eps 0.00377  preserved 1.0000
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_overconf_eps0.0157_s20   15316 imgs   425s  eff_eps 0.01570  preserved 1.0000
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_pgd_linf_eps0.00784_s10  15316 imgs   218s  eff_eps 0.00784  preserved 0.9185

@@ -44,11 +44,23 @@ def fgsm(model, x, y, eps: float, **_):
     return (x + eps * g.sign()).clamp(0, 1).detach()
 
 
+def default_alpha(eps: float, steps: int) -> float:
+    """alpha = 2.5*eps/steps -- the standard rule (Madry et al.; used throughout RobustBench).
+
+    The previous default here, max(eps/4, 1/255), gives alpha = eps/2 at eps=2/255, i.e. the
+    attack crosses the whole ball in two steps. That is a STRONGER attack than the convention,
+    so it understated the defenses rather than flattering them -- but it is not the number a
+    reviewer will assume, and a robustness figure is only comparable if the step rule is.
+    Recorded in every sidecar so the rule can never be inferred wrongly from the epsilon.
+    """
+    return 2.5 * eps / max(steps, 1)
+
+
 def pgd_linf(model, x, y, eps: float, alpha: float = None, steps: int = 10,
              random_start: bool = True, **_):
     """Madry et al. 2018, Linf. Random start matters: without it PGD is a multi-step FGSM
     that can stall in a flat region and overstate robustness."""
-    alpha = alpha if alpha is not None else max(eps / 4, 1 / 255)
+    alpha = alpha if alpha is not None else default_alpha(eps, steps)
     delta = (torch.empty_like(x).uniform_(-eps, eps) if random_start else torch.zeros_like(x))
     delta = ((x + delta).clamp(0, 1) - x).detach()
     for _ in range(steps):
@@ -63,7 +75,7 @@ def pgd_linf(model, x, y, eps: float, alpha: float = None, steps: int = 10,
 def pgd_l2(model, x, y, eps: float, alpha: float = None, steps: int = 10, **_):
     """L2 PGD. Reported separately from Linf because a detector can be robust in one norm
     and not the other, and quoting a single 'robustness' number hides that."""
-    alpha = alpha if alpha is not None else eps / 4
+    alpha = alpha if alpha is not None else default_alpha(eps, steps)
     b = x.shape[0]
     delta = torch.randn_like(x)
     n = delta.view(b, -1).norm(dim=1).view(-1, 1, 1, 1).clamp_min(1e-12)
@@ -214,17 +226,23 @@ def underconfidence(model, x, y=None, eps: float = 4 / 255, alpha: float = None,
     where over-confidence inflates RESIDUAL RISK (the system auto-decides work it gets
     wrong). WP4 prices both, and they are not symmetric: one wastes moderator hours, the
     other ships wrong decisions.
+
+    OBJECTIVE: KL(f(x+delta) || uniform), i.e. drive the prediction toward maximum entropy
+    (Ledda et al. 2025, Eq. 11). The earlier implementation ASCENDED cross-entropy against the
+    frozen prediction, which is unbounded -- it does not stop at the point of maximum
+    uncertainty, it keeps going straight through the boundary and out the other side, so
+    "under-confidence" and "label flip" became the same attack. A uniform target has its
+    optimum exactly at margin zero, which is what the name promises.
     """
     alpha = alpha if alpha is not None else max(eps / 8, 0.5 / 255)
-    with torch.no_grad():
-        yhat = model(x).argmax(1)
     delta = torch.zeros_like(x)
     for _ in range(steps):
         delta.requires_grad_(True)
         logp = F.log_softmax(model(x + delta), dim=1)
-        loss = F.nll_loss(logp, yhat)
+        uniform = torch.full_like(logp, -float(np.log(logp.shape[1])))
+        loss = F.kl_div(logp, uniform, log_target=True, reduction="batchmean")
         g, = torch.autograd.grad(loss, delta)
-        delta = (delta.detach() + alpha * g.sign()).clamp(-eps, eps)   # ASCEND: maximize H
+        delta = (delta.detach() - alpha * g.sign()).clamp(-eps, eps)   # DESCEND toward uniform
         delta = (x + delta).clamp(0, 1) - x
     return (x + delta).detach()
 

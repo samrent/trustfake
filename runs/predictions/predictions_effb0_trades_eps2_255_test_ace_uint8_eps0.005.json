@@ -1,13 +1,13 @@
 {
   "model_id": "effb0_trades_eps2_255",
   "backbone": "tf_efficientnet_b0.ns_jft_in1k",
-  "condition": "clean",
-  "split": "calib",
-  "n": 4684,
-  "seconds": 3.4,
+  "condition": "ace_uint8_eps0.005",
+  "split": "test",
+  "n": 15316,
+  "seconds": 30.2,
   "key": "uid",
   "batch": 32,
-  "timestamp": "2026-08-21T15:43:51",
+  "timestamp": "2026-08-21T15:44:53",
   "seed": 0,
   "manifest_sha": "da5c6f93fba7ac860460835ed13774ec04a1d5260dabec2e2352f591a8a440ae",
   "provenance": {
@@ -99,8 +99,16 @@
     "wall_clock_min": 15.33,
     "note": "model selection on a held-out slice of FIT; calib and test never seen"
   },
-  "attack": "clean",
-  "family": "clean",
-  "direction": "n/a",
-  "eps": 0.0
+  "attack": "ace_uint8",
+  "family": "confidence",
+  "direction": "both",
+  "eps": 0.005,
+  "uses_labels": true,
+  "eps_effective_mean": 0.003770817769691348,
+  "eps_effective_max": 0.003921627998352051,
+  "frac_perturbed": 1.0,
+  "label_preservation": 1.0,
+  "attack_kwargs": {
+    "eps": 0.005
+  }
 }
