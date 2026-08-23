@@ -363,6 +363,22 @@ rows being compared were produced at different ones.
 The same effect is why `ace()` returns the logits from its accept-check forward rather than
 re-running the model on x_adv.
 
+## License
+
+**PolyForm Noncommercial License 1.0.0** — see `LICENSE.md`. Any noncommercial purpose is
+permitted; use by an educational institution, public research organization or government
+institution is permitted regardless of funding. Commercial use requires a separate licence
+from the author.
+
+Two things worth stating plainly:
+- This is **not** an OSI-approved open-source licence. If the project is offered as a TRAIL
+  Factory brick, "open artifact" here means source-available and freely usable for research
+  and by the camp, not OSI-open. Confirm that is acceptable to TRAIL before presenting it as
+  the brick.
+- It applies to **this harness only**. SID-Set, the timm/CLIP weights and any third-party
+  material keep their own licences; the dataset and model weights are not redistributed here
+  (they are downloaded, and are git-ignored).
+
 ## Layout
 
 ```

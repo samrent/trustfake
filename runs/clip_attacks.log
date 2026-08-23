@@ -9,3 +9,8 @@ detector vit_l14_e2e (probe)
   predictions_vit_l14_e2e_test_ace_eps0.005                        4000 imgs   478s  eff_eps 0.00205  preserved 1.0000
 ### pgd_linf eps=0.00784
 detector vit_l14_e2e (probe)
+  predictions_vit_l14_e2e_test_pgd_linf_eps0.00784_s10             4000 imgs  1760s  eff_eps 0.00784  preserved 0.0678
+### overconf eps=0.0157
+detector vit_l14_e2e (probe)
+  predictions_vit_l14_e2e_test_overconf_eps0.0157_s20              4000 imgs  3291s  eff_eps 0.01223  preserved 1.0000
+### ALL DONE

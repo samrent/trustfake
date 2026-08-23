@@ -65,6 +65,38 @@
       "full_coverage_error": 0.06775,
       "condition": "ace_eps0.005",
       "accuracy": 0.93225
+    },
+    {
+      "t_low": 0.32968451218764105,
+      "t_high": 0.5917696112987546,
+      "n": 4000,
+      "coverage": 1.0,
+      "review_rate": 0.0,
+      "residual_risk": 1.0,
+      "n_auto": 4000,
+      "missed_fake_rate": 1.0,
+      "false_flag_rate": 1.0,
+      "review_of_fakes": 0.0,
+      "review_of_reals": 0.0,
+      "full_coverage_error": 1.0,
+      "condition": "pgd_linf_eps0.00784_s10",
+      "accuracy": 0.0
+    },
+    {
+      "t_low": 0.32968451218764105,
+      "t_high": 0.5917696112987546,
+      "n": 4000,
+      "coverage": 1.0,
+      "review_rate": 0.0,
+      "residual_risk": 0.06775,
+      "n_auto": 4000,
+      "missed_fake_rate": 0.0685,
+      "false_flag_rate": 0.067,
+      "review_of_fakes": 0.0,
+      "review_of_reals": 0.0,
+      "full_coverage_error": 0.06775,
+      "condition": "overconf_eps0.0157_s20",
+      "accuracy": 0.93225
     }
   ]
 }
