@@ -1,0 +1,26 @@
+{
+  "model_id": "vit_l14_e2e",
+  "backbone": "vit_large_patch14_clip_224.openai",
+  "condition": "clean",
+  "split": "calib",
+  "n": 4684,
+  "seconds": 68.0,
+  "key": "uid",
+  "batch": 16,
+  "timestamp": "2026-08-23T21:08:21",
+  "seed": 0,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "provenance": {
+    "kind": "probe",
+    "backbone": "vit_large_patch14_clip_224.openai",
+    "C": 0.01,
+    "fit_n": 6756,
+    "feature_dim": 1024,
+    "fit_train_acc": 0.9647720544701006,
+    "features_dir": "/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features"
+  },
+  "attack": "clean",
+  "family": "clean",
+  "direction": "n/a",
+  "eps": 0.0
+}

@@ -1,0 +1,5 @@
+### clean
+detector vit_l14_e2e (probe)
+  predictions_vit_l14_e2e_test_clean                               4000 imgs    62s
+### ace_uint8 eps=0.005
+detector vit_l14_e2e (probe)

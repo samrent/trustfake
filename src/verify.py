@@ -34,15 +34,20 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 PRED = ROOT / "runs" / "predictions"
 
 
-def split_uid_sha(manifest: pathlib.Path, split: str) -> tuple[int, str]:
+def split_uid_list(manifest: pathlib.Path, split: str) -> list[str]:
     t = pq.read_table(manifest, columns=["uid", "split"])
-    uids = [u for u, s in zip(t.column("uid").to_pylist(), t.column("split").to_pylist()) if s == split]
+    return [u for u, s in zip(t.column("uid").to_pylist(), t.column("split").to_pylist()) if s == split]
+
+
+def split_uid_sha(manifest: pathlib.Path, split: str) -> tuple[int, str]:
+    uids = split_uid_list(manifest, split)
     return len(uids), hashlib.sha256("\n".join(uids).encode()).hexdigest()[:16]
 
 
 def check(manifests: list[pathlib.Path], pred_dir: pathlib.Path) -> tuple[list[str], list[str]]:
     fails: list[str] = []
     warns: list[str] = []
+    samples: dict[str, dict[str, str]] = {}
     expect: dict[str, tuple[int, str]] = {}
     for m in manifests:
         if not m.exists():
@@ -73,12 +78,23 @@ def check(manifests: list[pathlib.Path], pred_dir: pathlib.Path) -> tuple[list[s
         split = meta.get("split")
         if split in expect:
             n_expect, sha_expect = expect[split]
-            if meta.get("n") != n_expect:
-                fails.append(f"{stem}: n={meta.get('n')} but manifest {split} declares {n_expect} "
-                             f"(a partial run overwrote a full one?)")
             sha = hashlib.sha256("\n".join(z["uid"].tolist()).encode()).hexdigest()[:16]
-            if sha != sha_expect:
-                fails.append(f"{stem}: uid sequence {sha} != manifest {split} {sha_expect}")
+            if meta.get("sample_n"):
+                # A subsampled row is legitimate, but only against rows drawn identically.
+                split_uids = set(split_uid_list(manifests[0], split))
+                if not set(z["uid"].tolist()) <= split_uids:
+                    fails.append(f"{stem}: sampled uids are not a subset of {split}")
+                if sha != meta.get("sample_uid_sha"):
+                    fails.append(f"{stem}: uid sha {sha} != recorded sample_uid_sha "
+                                 f"{meta.get('sample_uid_sha')}")
+                samples.setdefault(f"{meta.get('model_id')}/{split}", {})[meta["condition"]] = sha
+            else:
+                if meta.get("n") != n_expect:
+                    fails.append(f"{stem}: n={meta.get('n')} but manifest {split} declares "
+                                 f"{n_expect} (a partial run overwrote a full one?)")
+                if sha != sha_expect:
+                    fails.append(f"{stem}: uid sequence {sha} != manifest {split} {sha_expect}")
+                samples.setdefault(f"{meta.get('model_id')}/{split}", {})[meta["condition"]] = "FULL"
 
         for field, dt in (("y", "int8"), ("logits", "float32")):
             if field not in z:
@@ -103,6 +119,11 @@ def check(manifests: list[pathlib.Path], pred_dir: pathlib.Path) -> tuple[list[s
             parse_condition(meta["condition"])
         except ValueError as e:
             fails.append(f"{stem}: {e}")
+
+    for key, shas in samples.items():
+        if len(set(shas.values())) > 1:
+            fails.append(f"{key}: rows drawn from DIFFERENT samples {shas} -- a subsampled row "
+                         f"and a full-split row are not comparable")
 
     for key, conds in by_model.items():
         if len(set(conds.values())) > 1:

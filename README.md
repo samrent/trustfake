@@ -304,6 +304,27 @@ coverage UP (to 100% undefended, 80.8% with AT). It does not make the system abs
 the system abstaining, by making it confidently wrong. It also needs no ground-truth labels, so
 it is the one a real attacker can actually run.
 
+## Two numeric paths to the same model, and why they get different names
+
+The CLIP probe exists in two forms, and they are not interchangeable:
+
+  `vit_large_patch14_clip_224`  logits from CACHED features, extracted under fp16 autocast.
+                                Cheap, used for everything that does not need gradients.
+  `vit_l14_e2e`                 logits from an fp32 pixel forward through backbone + folded
+                                head. Differentiable end to end, so attacks can run on it.
+
+Same weights, same folded head, same images. Measured difference on the test split:
+
+    cached fp16 features : acc 0.9289   AURC 11.83e-3
+    fp32 pixel forward   : acc 0.9292   AURC 11.82e-3
+    margin |delta| mean 0.0135, max 0.2573; 8 of 15,316 predictions differ
+
+Three in ten thousand, of purely numerical origin. Small, and large enough to matter: writing
+both to one stem would have put a discrepancy into a table that no reader could attribute, and
+"accuracy identical across every row" would fail for a reason having nothing to do with any
+attack. `run_attacks.py --model-id` exists to force the distinction, and the measured gap is
+also why an equality assert at 1e-4 between the two paths is unreachable.
+
 ## Batch size is part of the experimental condition
 
 EfficientNet under cuDNN is not bit-identical across batch shapes. Regenerating the clean

@@ -17,6 +17,7 @@ label-preserving, the run is invalid and the number must be read, not assumed.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import time
@@ -37,7 +38,8 @@ PRED = ROOT / "runs" / "predictions"
 
 def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.Path,
             batch: int, limit: int | None, pred_dir: pathlib.Path, steps: int | None = None,
-            pixel_condition: str | None = None):
+            pixel_condition: str | None = None, sample: int | None = None,
+            sample_seed: int = 0):
     """attack='clean' + pixel_condition='jpeg_q50' runs a REALISTIC condition; attack=<name>
     runs an adversarial one. Both land in the same contract through the same code path, which
     is what makes the clean / realistic / adversarial rows of the WP3 table comparable."""
@@ -45,6 +47,18 @@ def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.P
     keep = [i for i, s in enumerate(t.column("split").to_pylist()) if s == split]
     if limit:
         keep = keep[:limit]
+    if sample:
+        # Class-balanced seeded subsample. ViT-L/14 is 303M params: a 20-step attack over the
+        # full 15,316 test images is hours, and at n~4,000 the bootstrap 95% CI half-width on
+        # AURC is under ~1pp while the effects here run 5-30pp. Taking the FIRST n instead
+        # would be shard-skewed, since the manifest is built by shard permutation.
+        ys_all = np.array([t.column("y_binary")[i].as_py() for i in keep])
+        rng = np.random.default_rng(sample_seed)
+        pick = []
+        for cls in (0, 1):
+            idx = np.flatnonzero(ys_all == cls)
+            pick.append(rng.choice(idx, size=min(sample // 2, idx.size), replace=False))
+        keep = [keep[i] for i in np.sort(np.concatenate(pick))]
     uids = [t.column("uid")[i].as_py() for i in keep]
     imgs = [t.column("img_id")[i].as_py() for i in keep]
     y = np.array([t.column("y_binary")[i].as_py() for i in keep], dtype=np.int8)
@@ -95,6 +109,11 @@ def run_one(det, split: str, attack: str, eps: float | None, manifest: pathlib.P
             # instead of 32 moved accuracy by one sample in 15,316, which is enough to break
             # a headline that reads "accuracy identical across every row".
             "batch": batch,
+            **({"sample_n": len(uids), "sample_seed": sample_seed,
+                "sample_uid_sha": hashlib.sha256("\n".join(uids).encode()).hexdigest()[:16],
+                "sample_note": "class-balanced seeded subsample of the split; every row for "
+                               "this model must use the same sample_uid_sha to be comparable"}
+               if sample else {}),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"), "seed": 0,
             "manifest_sha": json.loads(manifest.with_suffix(".json").read_text())["manifest_sha256"],
             "provenance": det.provenance, **parse_condition(cond)}
@@ -131,8 +150,16 @@ def main() -> None:
     ap.add_argument("--manifest", type=pathlib.Path, default=ROOT / "runs" / "manifest_v1.parquet")
     ap.add_argument("--batch", type=int, default=32)
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--sample", type=int, default=None,
+                    help="class-balanced seeded subsample; use the SAME value for every row")
+    ap.add_argument("--sample-seed", type=int, default=0)
     ap.add_argument("--features-dir", type=pathlib.Path, default=FEATURES)
     ap.add_argument("--pred-dir", type=pathlib.Path, default=PRED)
+    ap.add_argument("--model-id", default=None,
+                    help="override the stem. REQUIRED when a probe's predictions already exist "
+                         "from cached features: those logits come from an fp16 feature pass, "
+                         "these from an fp32 pixel forward, so the same stem would silently mix "
+                         "two provenances in one table.")
     a = ap.parse_args()
 
     # A limited run writes the SAME stem as a full run: predictions_{model}_{split}_{cond}.
@@ -145,12 +172,15 @@ def main() -> None:
             "canonical predictions. Pass --pred-dir runs/partial (or another directory).")
 
     det = build(a.model, a.features_dir)
+    if a.model_id:
+        det.model_id = a.model_id
     print(f"detector {det.model_id} ({det.provenance['kind']})")
     for atk in a.attacks:
-        run_one(det, a.split, atk, a.eps, a.manifest, a.batch, a.limit, a.pred_dir, a.steps)
+        run_one(det, a.split, atk, a.eps, a.manifest, a.batch, a.limit, a.pred_dir, a.steps,
+                sample=a.sample, sample_seed=a.sample_seed)
     for cond in a.conditions:
         run_one(det, a.split, "clean", None, a.manifest, a.batch, a.limit, a.pred_dir,
-                pixel_condition=cond)
+                pixel_condition=cond, sample=a.sample, sample_seed=a.sample_seed)
 
 
 if __name__ == "__main__":
