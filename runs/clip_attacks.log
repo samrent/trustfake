@@ -3,3 +3,9 @@ detector vit_l14_e2e (probe)
   predictions_vit_l14_e2e_test_clean                               4000 imgs    62s
 ### ace_uint8 eps=0.005
 detector vit_l14_e2e (probe)
+  predictions_vit_l14_e2e_test_ace_uint8_eps0.005                  4000 imgs   337s  eff_eps 0.00128  preserved 1.0000
+### ace eps=0.005
+detector vit_l14_e2e (probe)
+  predictions_vit_l14_e2e_test_ace_eps0.005                        4000 imgs   478s  eff_eps 0.00205  preserved 1.0000
+### pgd_linf eps=0.00784
+detector vit_l14_e2e (probe)

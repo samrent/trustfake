@@ -102,6 +102,16 @@ def _balance(idx: dict, rng: np.random.Generator, policy: str) -> np.ndarray:
     return np.sort(np.concatenate(keep))
 
 
+def _count_img_id_collisions() -> int:
+    """img_id-column-only scan of every shard on disk; ~1-2 min, run once per manifest build."""
+    train, val = set(), set()
+    for f in sorted(DATA.glob("train-*.parquet")):
+        train.update(pq.ParquetFile(f).read(columns=["img_id"]).column("img_id").to_pylist())
+    for f in sorted(DATA.glob("validation-*.parquet")):
+        val.update(pq.ParquetFile(f).read(columns=["img_id"]).column("img_id").to_pylist())
+    return len(train & val)
+
+
 def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
     train_shards, val_shards = _shards("train"), _shards("validation")
     n = PROFILES[profile]
@@ -168,7 +178,11 @@ def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
         "leakage_rule": "fit from train shards only; calib and test from disjoint validation shards",
         "key": "uid = '<source_split>:<img_id>'; img_id alone is NOT unique across splits",
         "img_id_collisions_in_manifest": n_colliding,
-        "img_id_collisions_in_full_dataset": 8634,
+        # Computed, never asserted: this figure was once a hard-coded 8634, counted while
+        # only half the train shards were on disk, and nothing in the repo recomputed it.
+        # True count over all 283 shards: 19,107 (10,000 synthetic + 9,107 tampered) --
+        # every one of the 10,000 fully-synthetic validation img_ids collides with train.
+        "img_id_collisions_in_full_dataset": _count_img_id_collisions(),
         "cache_policy": "short-side 256, JPEG q95 -- lossy, unsuitable for frequency-domain "
                         "detectors; raw parquet retained for that reason",
         "splits": counts,

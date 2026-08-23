@@ -150,7 +150,8 @@ def test_permutation_invariance_under_heavy_ties():
 
     assert max(v[0] for v in vals) - min(v[0] for v in vals) == 0.0
     assert max(v[1] for v in vals) - min(v[1] for v in vals) == 0.0
-    assert max(naive) - min(naive) > 1e-3        # the bug we are defending against, measured
+    spread = max(naive) - min(naive)             # the bug we are defending against, measured
+    assert 5e-3 < spread < 5e-2, f'fixture drifted: naive spread {spread:.2e}'
 
 
 # ---------------------------------------------------------- 8. temperature invariance

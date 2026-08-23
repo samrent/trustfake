@@ -59,21 +59,29 @@ failure prediction goes 0.7703 → 0.0002: confidence now ranks the model's mist
 its correct answers, near-perfectly inverted. `runs/fig2_confidence_hist.png` shows the two
 distributions swapping places.
 
-**And calibration does not help.** Every attacked row is bit-identical between T = 1.2785
-and T = 1 on AURC, AUGRC, AUROC(failure) and risk@coverage, while ECE moves 0.33 → 0.47.
-For a 2-class model MSP = σ(|z₁−z₀|/T) is strictly monotone in the logit margin, so
-temperature cannot reorder samples — it slides the operating point along a fixed curve.
-This is `tests/test_metrics.py::test_temperature_cannot_change_binary_selective_metrics`,
-an assert rather than a citation. Bound: it is exact down to T = 0.5; below T ≈ 0.2 float64
-softmax saturates MSP to exactly 1.0 and manufactures tie blocks, at which point AURC moves
-by ~4e-3 — the representation degrades, not the ordering. Hence `n_op` (distinct confidence
-values) is printed beside AURC in every table.
+**And calibration does not help — with one sharp caveat.** For a 2-class model
+MSP = σ(|z₁−z₀|/T) is strictly monotone in the logit margin, so temperature cannot reorder
+samples: it slides the operating point along a fixed curve. The *ordering* is exactly
+temperature-invariant. The *representation* is not. float64 σ returns exactly 1.0 once
+|margin|/T ≥ 36.74, and neighbouring margins collide into tie blocks well before that.
+
+On the **linear probes** (max|margin| ≈ 12) the invariance is bit-exact for every T ≥ 0.5:
+AURC 67.054e-3 at T ∈ {0.5, 1, 2, 5, 10}, ECE moving 0.008 → 0.032 on clean. That is the
+result, asserted in
+`tests/test_metrics.py::test_temperature_cannot_change_binary_selective_metrics`.
+
+On the **WP3 checkpoints** it is not, and the guard is `n_op`. `effb0_standard` under the
+over-confidence attack reaches max|margin| = 118.6; its AURC runs 194.24e-3 at the fitted
+T = 3.338 (n_op 12,674) down to 156.50e-3 at T = 1 (n_op 1). Any row whose `n_op` is far below
+n has saturated to tie blocks and its AURC is temperature-dependent — so `n_op` is printed
+beside AURC in the D3 table, and a saturated cell must not be read as a precise value.
 
 ## Two dataset findings that fail silently
 
-**1. `img_id` is not a key.** 8,634 img_ids appear in BOTH the train and validation splits —
-4,496 synthetic and 4,138 tampered — because those classes are numbered sequentially and the
-counter restarts per split. `full_synthetic_000155` exists in each, with different bytes
+**1. `img_id` is not a key.** 19,107 img_ids appear in BOTH the train and validation splits —
+10,000 synthetic and 9,107 tampered (`runs/img_id_collisions.json`, full 283-shard scan) —
+because those classes are numbered sequentially and the counter restarts per split. Every one
+of the 10,000 fully-synthetic validation img_ids collides with a train image. `full_synthetic_000155` exists in each, with different bytes
 (verified: 0/6 byte-identical on inspection). The real class is content-hash named and has
 **zero** collisions, so spot-checking reals hides the problem entirely. A flat feature cache
 keyed on `img_id` silently overwrites fit images with test images; a join between two npz
@@ -112,8 +120,10 @@ Measured on the exact test split (n=15,316, 50/50 prior):
 | majority class | 0.5000 |
 
 Label 1 (fully synthetic) is 100% square 1024x1024 PNG, label 2 (tampered) is 100% square, and
-only ~5% of real images are square. A one-line metadata rule with no learning in it beats every
-model here. **On SID-Set, an accuracy is not evidence of forensic capability until it is read
+only **4.3%** of real images are square. A one-line metadata rule with no learning in it beats
+every model here. The same shortcut re-expressed as a property of the model's actual input —
+a frozen threshold on the decode scale factor (1024→256 = 0.25× for 100% of fakes, 4.0% of
+reals) — scores **0.9798** on test. **On SID-Set, an accuracy is not evidence of forensic capability until it is read
 against 0.9785, not against 0.5.** (Grommelt et al., "Fake or JPEG? Revealing Common Biases in
 Generated Image Detection Datasets".) `src/baselines.py` computes this and every table prints it.
 
@@ -127,15 +137,26 @@ had to be settled by measurement rather than argument:
 | uncontrolled | 0.9289 | 0.9801 | 11.83 |
 | **geometry-controlled** (`squarecrop`, fit AND eval) | **0.9291** | 0.9802 | 11.75 |
 
-Unchanged. The detector was never riding the artifact. Run any condition under `squarecrop` to
-reproduce; `tests/test_attacks.py` locks the property that the control actually removes geometry.
+Unchanged — but that is the most the control could show, and it is not an exoneration.
+`squarecrop` centre-crops to min(w,h), which is a **bit-exact no-op on 100% of the fakes** (all
+already square), and both arms already feed the backbone a 224×224 centre crop (crop_pct 1.0),
+so aspect ratio is discarded either way. What this establishes: the model cannot read aspect
+ratio. What it does **not** establish: that the model is not riding the shortcut, because the
+shortcut is laundered into resampling and compression history that cropping cannot touch — the
+decode-scale threshold above still scores 0.9798. **Whether the probe rides that residue is
+open.** The settling experiment, named in `src/baselines.py`'s own docstring: a
+format/compression-matched subset (one identical JPEG pass over every image, or real∩JPEG vs
+tampered∩JPEG). `tests/test_attacks.py` locks only that square-crop makes an image square — a
+property of the transform, not of the model.
 
 ## Two threat models for the confidence attack, and only one is realisable
 
-Unquantised ACE produces mean perturbations of **0.102 / 0.261 / 0.447 grey levels** at
-eps = 0.0005 / 0.002 / 0.005 — below one 8-bit quantisation step (0.5/255 = 0.00196). The decode
-cache is uint8 and `ToTensor` puts x exactly on the k/255 grid, so rounding a sub-step
-perturbation back to uint8 erases it. Unquantised ACE therefore describes an attacker with
+Unquantised ACE produces mean per-sample perturbations of **0.102 / 0.261 / 0.447 grey levels**
+at eps = 0.0005 / 0.002 / 0.005 — but the quantity that decides survival under round-to-nearest
+is the per-sample **max**, which is 0.128 / 0.510 / 1.275. The rounding radius is **half** a grey
+level (0.5/255 = 0.00196; the step itself is 1/255). So eps=0.0005 vanishes exactly — that is the
+control — while at eps=0.002/0.005 a quarter of the images (≈3,889 of 15,316) keep a full
+one-grey-level change and the attack is realisable. Unquantised ACE therefore describes an attacker with
 post-decode **tensor** access; `ace_uint8` describes one who can only upload a **file**, which is
 the moderation threat model that matters. (This is why integer-constrained attacks exist in
 forensics: Tondi, Electronics Letters 54(21), 2018.)
@@ -147,7 +168,10 @@ forensics: Tondi, Electronics Letters 54(21), 2018.)
 | ACE eps=0.0005, **uint8** | 0.8311 | 0.7703 | 67.05 | 4.65% |
 | ACE eps=0.002-0.005, **uint8** | 0.8311 | 0.0471 | 433.87 | **33.06%** |
 
-The sub-step row vanishes exactly as predicted, which is the control. The realisable row is the
+(The two uint8 rows are identical to the precision shown; they differ on 1 of 15,316 samples.)
+
+The sub-step row vanishes to the reported precision — its logits differ from clean only in the
+cuDNN batch-shape noise floor documented below — which is the control. The realisable row is the
 result: a **one-grey-level** perturbation, invisible to a human and survivable in a saved PNG,
 takes a policy tuned to a 5% residual-risk SLA to **33% wrong auto-decisions at bit-identical
 accuracy** — and coverage RISES to 50.4%, so the system auto-decides more while being far more
@@ -174,7 +198,7 @@ Report which threat model a row belongs to. Never quote the float32 number alone
 
 ## WP2 — attack package (D2)
 
-`src/attack_suite.py` holds seven attacks in two families, and the family distinction is the
+`src/attack_suite.py` holds eight attacks in two families, and the family distinction is the
 scientific spine: a prediction-targeted attack collapses AURC *as a side effect* of destroying
 accuracy, while a confidence-targeted attack collapses it at accuracy that does not move.
 
@@ -201,8 +225,9 @@ Standard / PGD-AT / TRADES on a fixed backbone, fixed data protocol, fixed evalu
 would hand the clean arm ~8x the weight updates and the comparison would measure budget). Model
 selection uses a held-out slice of *fit*; calib and test are never seen.
 
-**The epsilon finding.** PGD-AT at the standard ImageNet budget eps=8/255 COLLAPSED: loss pinned
-at ln 2, clean and robust accuracy both at the majority-class rate, constant output
+**The epsilon finding.** PGD-AT at the standard ImageNet budget eps=8/255 COLLAPSED: loss
+decaying toward ln 2 (0.7102 by epoch 6, from 0.7647), clean and robust accuracy both at the
+majority-class rate, constant output
 (`runs/train_wp3_eps8_255_collapsed.log`). Deepfake evidence is small-amplitude high-frequency
 residue — generator fingerprints, resampling traces, blending seams — and an 8/255 ball is wide
 enough to erase it, so the robust-optimal classifier inside that ball really can be a constant.
@@ -290,8 +315,8 @@ Policy fitted per model on its own clean calib at a 5% residual-risk SLA, then f
 | model | clean residual risk | review rate | PGD | ACE uint8 | over-confidence |
 |---|---|---|---|---|---|
 | standard | 5.47% | 27.1% | **100.00%** | 19.18% | 15.65% (coverage -> **100%**) |
-| PGD-AT | 4.72% | 50.1% | 13.01% | 8.05% | 12.63% |
-| TRADES | 4.98% | 55.4% | 13.53% | 8.47% | 12.89% |
+| PGD-AT | 4.72% | 50.1% | 12.97% | 8.05% | 12.63% |
+| TRADES | 4.98% | 55.4% | 13.51% | 8.47% | 12.89% |
 
 The deployment reading: adversarial training takes residual risk under a label attack from
 **100% to 13%** and under a confidence attack from 19.2% to 8.1%, and it holds the SLA under
@@ -299,8 +324,9 @@ JPEG q50 (11.17% -> 4.74%). **The price is the review bill roughly doubling**, 2
 is a moderation-staffing cost, not an accuracy cost, and it belongs in the same sentence as the
 safety gain.
 
-The residual threat is the **label-free over-confidence attack**: it is the only one that drives
-coverage UP (to 100% undefended, 80.8% with AT). It does not make the system abstain — it stops
+The residual threat is the **label-free over-confidence attack**: on the defended models it is the only attack that drives
+coverage UP (PGD-AT 49.9%→80.8%, TRADES 44.6%→74.0%); on the undefended model PGD and ACE raise
+coverage too. It does not make the system abstain — it stops
 the system abstaining, by making it confidently wrong. It also needs no ground-truth labels, so
 it is the one a real attacker can actually run.
 
@@ -315,11 +341,12 @@ The CLIP probe exists in two forms, and they are not interchangeable:
 
 Same weights, same folded head, same images. Measured difference on the test split:
 
-    cached fp16 features : acc 0.9289   AURC 11.83e-3
-    fp32 pixel forward   : acc 0.9292   AURC 11.82e-3
-    margin |delta| mean 0.0135, max 0.2573; 8 of 15,316 predictions differ
+    cached fp16 features : acc 0.9313   AURC 12.09e-3
+    fp32 pixel forward   : acc 0.9323   AURC 12.09e-3
+    margin |delta| mean 0.0135, max 0.1703; 4 of 4,000 predictions differ
 
-Three in ten thousand, of purely numerical origin. Small, and large enough to matter: writing
+(Measured on the 4,000-image class-balanced subsample the differentiable path runs on,
+`sample_uid_sha 115f77e2`.) One in a thousand, of purely numerical origin. Small, and large enough to matter: writing
 both to one stem would have put a discrepancy into a table that no reader could attribute, and
 "accuracy identical across every row" would fail for a reason having nothing to do with any
 attack. `run_attacks.py --model-id` exists to force the distinction, and the measured gap is
@@ -358,7 +385,7 @@ src/run_all.py    driver; --smoke is the offline pre-flight
 src/baselines.py  trivial metadata baselines; the number every accuracy is read against
 src/compare.py    the D3 comparative table across defenses x conditions
 src/verify.py     artifact self-consistency check; run it before believing any table
-tests/            19 tests (9 metrics + 10 attacks/hardening), no GPU, no data, no network, <2 s
+tests/            19 tests (9 metrics + 10 attacks/hardening), no GPU, no data, no network, ~3 s
 ```
 
 ## Run
@@ -369,8 +396,8 @@ HF_HUB_OFFLINE=1 .venv/bin/python -m src.run_all --smoke     # offline pre-fligh
 HF_HUB_OFFLINE=1 .venv/bin/python -m src.run_all             # full, ~8 min on a 3090
 ```
 
-Measured on this box: decode 214 img/s (4 workers), CLIP L/14 features 232 img/s,
-EfficientNet-B0 features 784 img/s, ACE over 15,316 images 41–62 s per epsilon.
+Measured on this box: decode 214 img/s (4 workers), CLIP L/14 features 189-214 img/s,
+EfficientNet-B0 features 1143-1549 img/s, ACE over 15,316 images 41–62 s per epsilon.
 
 ## Conventions that must travel with the numbers
 
@@ -378,7 +405,8 @@ EfficientNet-B0 features 784 img/s, ACE over 15,316 images 41–62 s per epsilon
   `generalized == coverage · selective` elementwise (asserted).
 - AURC/AUGRC = **block-size-weighted mean over distinct operating points**. Tie blocks are
   collapsed: a threshold inside a tie block selects a permutation-dependent set. Naive
-  cumulative AURC varies 5.6e-3 across permutations with 10 distinct confidence levels.
+  cumulative AURC varies ~1.6e-2 across 8 permutations with 10 distinct confidence levels
+(growing with permutations sampled).
   Trapezoid-over-coverage is a third convention in the literature and is not used here.
 - E-AURC uses the **empirical** oracle at the same n, never the asymptotic closed form
   `r + (1−r)ln(1−r)` (9.65e-05 off at n=1000 — the size of the effects being reported).

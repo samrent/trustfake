@@ -1,0 +1,10 @@
+{
+  "train_unique": 210000,
+  "validation_unique": 30000,
+  "collisions_total": 19107,
+  "collisions_by_label": {
+    "0": 0,
+    "1": 10000,
+    "2": 9107
+  }
+}

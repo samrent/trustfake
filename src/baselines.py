@@ -53,7 +53,7 @@ def compute(manifest: pathlib.Path, split: str = "test") -> dict:
         if sp == split:
             want[s][i] = (u, int(y), int(lab))
 
-    sq, png, ys, labs = [], [], [], []
+    sq, png, ys, labs, short = [], [], [], [], []
     for shard, ids in want.items():
         pf = pq.ParquetFile(DATA / shard)
         for rg in range(pf.metadata.num_row_groups):
@@ -63,9 +63,10 @@ def compute(manifest: pathlib.Path, split: str = "test") -> dict:
                 if iid in ids:
                     sq.append(int(w == h))
                     png.append(int(Image.open(io.BytesIO(im["bytes"])).format == "PNG"))
+                    short.append(min(w, h))
                     ys.append(ids[iid][1])
                     labs.append(ids[iid][2])
-    sq, png, ys, labs = map(np.asarray, (sq, png, ys, labs))
+    sq, png, ys, labs, short = map(np.asarray, (sq, png, ys, labs, short))
     prior = max(ys.mean(), 1 - ys.mean())
     out = {
         "split": split, "n": int(ys.size), "fake_prior": float(ys.mean()),
@@ -73,6 +74,13 @@ def compute(manifest: pathlib.Path, split: str = "test") -> dict:
         "B0_square_is_fake": float((sq == ys).mean()),
         "B0_png_is_fake": float((png == ys).mean()),
         "B0_square_or_png_is_fake": float(((sq | png) == ys).mean()),
+        # The decode-scale residue: the 256px cache downscales a 1024-short-side original by
+        # exactly 0.25, and 100% of fakes but ~4% of reals have short side 1024. Unlike
+        # width==height, centre-cropping does NOT remove this -- it survives into resampling
+        # history, which is why the squarecrop control cannot exonerate the model of it.
+        "B0_shortside1024_is_fake": float(((short == 1024).astype(int) == ys).mean()),
+        "shortside1024_rate_by_label": {str(k): float((short[labs == k] == 1024).mean())
+                                        for k in sorted(set(labs.tolist()))},
         "square_rate_by_label": {str(k): float(sq[labs == k].mean()) for k in sorted(set(labs.tolist()))},
         "png_rate_by_label": {str(k): float(png[labs == k].mean()) for k in sorted(set(labs.tolist()))},
         "note": "A detector accuracy on SID-Set must be read against B0_square_is_fake, not "
@@ -103,6 +111,8 @@ def main() -> None:
     ap.add_argument("--out", type=pathlib.Path, default=ROOT / "runs" / "trivial_baselines.json")
     a = ap.parse_args()
     b = compute(a.manifest, a.split)
+    b["manifest"] = str(a.manifest)
+    b["manifest_sha256"] = json.loads(a.manifest.with_suffix(".json").read_text())["manifest_sha256"]
     a.out.write_text(json.dumps(b, indent=2) + "\n")
     print(json.dumps(b, indent=2))
     print("\n" + headline(b))

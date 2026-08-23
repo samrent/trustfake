@@ -167,6 +167,11 @@ def main() -> None:
     ap.add_argument("--out", type=pathlib.Path, default=ROOT / "runs" / "moderation_report.md")
     a = ap.parse_args()
 
+    blp = ROOT / "runs" / "trivial_baselines.json"
+    if blp.exists():
+        from .baselines import headline
+        print(headline(json.loads(blp.read_text())) + "\n")
+
     cl, cy, _, _ = load(f"predictions_{a.model}_calib_clean", a.pred_dir)
     T = M.fit_temperature(cl, cy)
     t_low, t_high = fit_thresholds(p_fake_from(cl, T), cy, a.sla, a.sla_missed_fake)

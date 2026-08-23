@@ -1,0 +1,38 @@
+{
+  "model_id": "vit_l14_e2e",
+  "backbone": "vit_large_patch14_clip_224.openai",
+  "condition": "ace_uint8_eps0.005",
+  "split": "test",
+  "n": 4000,
+  "seconds": 336.5,
+  "key": "uid",
+  "batch": 16,
+  "sample_n": 4000,
+  "sample_seed": 0,
+  "sample_uid_sha": "115f77e24f7412a3",
+  "sample_note": "class-balanced seeded subsample of the split; every row for this model must use the same sample_uid_sha to be comparable",
+  "timestamp": "2026-08-23T21:45:49",
+  "seed": 0,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "provenance": {
+    "kind": "probe",
+    "backbone": "vit_large_patch14_clip_224.openai",
+    "C": 0.01,
+    "fit_n": 6756,
+    "feature_dim": 1024,
+    "fit_train_acc": 0.9647720544701006,
+    "features_dir": "/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features"
+  },
+  "attack": "ace_uint8",
+  "family": "confidence",
+  "direction": "both",
+  "eps": 0.005,
+  "uses_labels": true,
+  "eps_effective_mean": 0.0012814319925382733,
+  "eps_effective_max": 0.003921627998352051,
+  "frac_perturbed": 1.0,
+  "label_preservation": 1.0,
+  "attack_kwargs": {
+    "eps": 0.005
+  }
+}

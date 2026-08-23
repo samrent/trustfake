@@ -29,13 +29,17 @@ from . import metrics as M
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PRED = ROOT / "runs" / "predictions"
 
+# Every adversarial row carries its epsilon IN THE LABEL. The three attacks run at budgets
+# differing by up to 4x (PGD at the AT training radius 2/255, over-confidence at 2x that,
+# ACE's accepted epsilon varying BY MODEL) -- an unlabelled row invites reading them as one
+# threat level, which the audit correctly called a budget confound.
 CONDITIONS = [
     ("clean", "clean"),
     ("jpeg_q50", "realistic: JPEG q50"),
     ("downscale_0.5", "realistic: 0.5x resize"),
-    ("pgd_linf_eps0.00784_s10", "adversarial: PGD 2/255 (label)"),
-    ("ace_uint8_eps0.005", "adversarial: ACE uint8 (confidence)"),
-    ("overconf_eps0.0157_s20", "adversarial: over-confidence (label-free)"),
+    ("pgd_linf_eps0.00784_s10", "adv: PGD eps=2/255 (=AT radius; label)"),
+    ("ace_uint8_eps0.005", "adv: ACE uint8 cap 1.3/255 (conf; eff varies by model)"),
+    ("overconf_eps0.0157_s20", "adv: overconf eps=4/255 (2x AT radius; label-free)"),
 ]
 
 
@@ -54,7 +58,7 @@ def main() -> None:
     ap.add_argument("--out", type=pathlib.Path, default=ROOT / "runs" / "d3_comparative.md")
     a = ap.parse_args()
 
-    hdr = f"{'condition':<34}" + "".join(f"{m.replace('effb0_',''):>26}" for m in a.models)
+    hdr = f"{'condition':<52}" + "".join(f"{m.replace('effb0_',''):>33}" for m in a.models)
     lines, rows = [hdr, "-" * len(hdr)], {}
 
     temps = {}
@@ -72,11 +76,19 @@ def main() -> None:
                 continue
             s = M.summary(z, y, temperature=temps[m])
             rows[(m, cond)] = s
-            cells.append(f"{s['accuracy']:>7.4f} {s['auroc_failure']:>8.4f} {s['aurc']*1e3:>8.1f}")
-        lines.append(f"{label:<34}" + "".join(cells))
+            # n_op beside AURC: when n_op collapses toward 1, MSP has saturated to a tie
+            # block, AURC is temperature-dependent, and the cell must not be read as a
+            # precise value. This column is what catches the saturation regime.
+            cells.append(f"{s['accuracy']:>7.4f} {s['auroc_failure']:>8.4f} "
+                         f"{s['aurc']*1e3:>8.1f} {s['n_operating_points']:>6}")
+        lines.append(f"{label:<52}" + "".join(cells))
 
-    body = ("\n".join(lines) +
-            "\n\ncells: accuracy | AUROC(failure) | AURC x10^-3     "
+    from .baselines import headline
+    import json as _json
+    blp = ROOT / "runs" / "trivial_baselines.json"
+    bl_line = headline(_json.loads(blp.read_text())) if blp.exists() else ""
+    body = (bl_line + "\n\n" + "\n".join(lines) +
+            "\n\ncells: accuracy | AUROC(failure) | AURC x10^-3 | n_op     "
             + "  ".join(f"T({m.replace('effb0_','')})={temps[m]:.3f}" for m in a.models))
     print(body)
 

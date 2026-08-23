@@ -6,6 +6,12 @@
   "B0_square_is_fake": 0.9785191956124314,
   "B0_png_is_fake": 0.7673021676677984,
   "B0_square_or_png_is_fake": 0.9785191956124314,
+  "B0_shortside1024_is_fake": 0.9799556019848524,
+  "shortside1024_rate_by_label": {
+    "0": 0.04008879603029512,
+    "1": 1.0,
+    "2": 1.0
+  },
   "square_rate_by_label": {
     "0": 0.04296160877513711,
     "1": 1.0,
@@ -16,5 +22,7 @@
     "1": 1.0,
     "2": 0.06920867067119352
   },
-  "note": "A detector accuracy on SID-Set must be read against B0_square_is_fake, not against 0.5. See the module docstring."
+  "note": "A detector accuracy on SID-Set must be read against B0_square_is_fake, not against 0.5. See the module docstring.",
+  "manifest": "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/runs/manifest_v1.parquet",
+  "manifest_sha256": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4"
 }

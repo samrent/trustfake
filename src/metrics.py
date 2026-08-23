@@ -20,7 +20,8 @@ differences are the same order as the effects being reported:
   threshold that falls strictly inside a tie block selects a set that depends on the sort
   permutation, so its risk is not a property of the model. fp16 softmax saturating to
   exactly 1.0 manufactures such blocks silently; naive cumulative AURC then varies by
-  ~5.6e-3 across permutations of the same predictions.
+  ~1.6e-2 across 8 permutations of the same predictions (growing with permutations sampled;
+  re-measured 2026-08-19 on the repo's own fixture).
 
   AURC/AUGRC are averages over operating points. Two weightings are implemented:
     weights='block'   (default) each distinct operating point carries the size of its tie
@@ -195,10 +196,12 @@ def eaurc(conf, correct, weights: str = "block") -> float:
     """Excess AURC = aurc - aurc_optimal_empirical. Zero for a perfect ranker, by test 1.
 
     Isolates ranking quality from the error rate ONLY PARTIALLY, and the residual dependence
-    is large enough to mislead: at a fixed AUROC(failure) of ~0.921, E-AURC still moves from
-    0.0077 to 0.0227 as the error rate changes. Use it BESIDE AURC as a within-model
-    diagnostic; carry cross-model claims on AUROC(failure), which is rate-free by
-    construction.
+    is large enough to mislead. A pair from this repo's own artifacts: effb0_at_pgd clean has
+    AUROC(failure) 0.8006 with E-AURC 44.6e-3, while effb0_trades clean has the LOWER
+    AUROC(failure) 0.7761 with the HIGHER E-AURC 58.2e-3 -- consistent, but the E-AURC gap is
+    driven as much by their different error rates as by ranking. Use E-AURC BESIDE AURC as a
+    within-model diagnostic; carry cross-model claims on AUROC(failure), which is rate-free
+    by construction.
     """
     return aurc(conf, correct, weights) - aurc_optimal_empirical(correct, weights)
 
