@@ -1,0 +1,19 @@
+### 1. extract ResNet-18 features (the missing step)
+resnet18.tv_in1k: input (3, 224, 224) mean (0.485, 0.456, 0.406) crop_pct 0.875
+  fit/clean: (6756, 512) in 8.0s (847.5 img/s) -> features/
+resnet18.tv_in1k: input (3, 224, 224) mean (0.485, 0.456, 0.406) crop_pct 0.875
+  calib/clean: (4684, 512) in 6.1s (769.6 img/s) -> features/
+resnet18.tv_in1k: input (3, 224, 224) mean (0.485, 0.456, 0.406) crop_pct 0.875
+  test/clean: (15316, 512) in 4.6s (3363.7 img/s) -> features/
+### 2. ResNet-18 attacks
+detector resnet18 (probe)
+  predictions_resnet18_calib_clean                                 4684 imgs     2s
+detector resnet18 (probe)
+  predictions_resnet18_test_clean                                 15316 imgs     6s
+  predictions_resnet18_test_jpeg_q50                              15316 imgs     6s
+  predictions_resnet18_test_downscale_0.5                         15316 imgs     6s
+detector resnet18 (probe)
+  predictions_resnet18_test_ace_uint8_eps0.005                    15316 imgs    24s  eff_eps 0.00090  preserved 1.0000
+detector resnet18 (probe)
+  predictions_resnet18_test_overconf_eps0.0157_s20                15316 imgs   215s  eff_eps 0.01302  preserved 1.0000
+### RESNET DONE

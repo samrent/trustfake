@@ -1,0 +1,26 @@
+{
+  "model_id": "resnet18",
+  "backbone": "resnet18.tv_in1k",
+  "condition": "downscale_0.5",
+  "split": "test",
+  "n": 15316,
+  "seconds": 6.4,
+  "key": "uid",
+  "batch": 32,
+  "timestamp": "2026-08-24T16:38:36",
+  "seed": 0,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "provenance": {
+    "kind": "probe",
+    "backbone": "resnet18.tv_in1k",
+    "C": 0.01,
+    "fit_n": 6756,
+    "feature_dim": 512,
+    "fit_train_acc": 0.812907045589106,
+    "features_dir": "/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features"
+  },
+  "attack": "downscale_0.5",
+  "family": "realistic",
+  "direction": "n/a",
+  "eps": 0.0
+}

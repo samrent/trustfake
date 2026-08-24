@@ -1,0 +1,34 @@
+{
+  "model_id": "tf_efficientnet_b0",
+  "backbone": "tf_efficientnet_b0.ns_jft_in1k",
+  "condition": "autoattack_eps0.00784",
+  "split": "test",
+  "n": 15316,
+  "seconds": 1762.4,
+  "key": "uid",
+  "batch": 32,
+  "timestamp": "2026-08-24T12:45:06",
+  "seed": 0,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "provenance": {
+    "kind": "probe",
+    "backbone": "tf_efficientnet_b0.ns_jft_in1k",
+    "C": 0.01,
+    "fit_n": 6756,
+    "feature_dim": 1280,
+    "fit_train_acc": 0.8984606275902901,
+    "features_dir": "/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features"
+  },
+  "attack": "autoattack",
+  "family": "prediction",
+  "direction": "n/a",
+  "eps": 0.00784,
+  "uses_labels": true,
+  "eps_effective_mean": 0.006515765096992254,
+  "eps_effective_max": 0.007840007543563843,
+  "frac_perturbed": 0.83109166884304,
+  "label_preservation": 0.16893267224004224,
+  "attack_kwargs": {
+    "eps": 0.00784
+  }
+}

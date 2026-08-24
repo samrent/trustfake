@@ -1,0 +1,83 @@
+### AutoAttack on defended arms, 2k class-balanced sample (isolated dir)
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_autoattack_eps0.00784     2000 imgs  1708s  eff_eps 0.00078  preserved 0.9003
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_autoattack_eps0.00784     2000 imgs  1689s  eff_eps 0.00067  preserved 0.9142
+### ResNet-18 parity (canonical dir)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 195, in <module>
+    main()
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 182, in main
+    det = build(a.model, a.features_dir)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 163, in build
+    return build_probe_detector(rest, features_dir, device=device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 100, in build_probe_detector
+    x = np.load(features_dir / f"{stem}.npy")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/.venv/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features/resnet18_fit_clean.npy'
+### FAILED: --model probe:resnet18.tv_in1k --split calib --attacks clean --batch 32
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 195, in <module>
+    main()
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 182, in main
+    det = build(a.model, a.features_dir)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 163, in build
+    return build_probe_detector(rest, features_dir, device=device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 100, in build_probe_detector
+    x = np.load(features_dir / f"{stem}.npy")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/.venv/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features/resnet18_fit_clean.npy'
+### FAILED: --model probe:resnet18.tv_in1k --split test --attacks clean --conditions jpeg_q50 downscale_0.5 --batch 32
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 195, in <module>
+    main()
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 182, in main
+    det = build(a.model, a.features_dir)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 163, in build
+    return build_probe_detector(rest, features_dir, device=device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 100, in build_probe_detector
+    x = np.load(features_dir / f"{stem}.npy")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/.venv/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features/resnet18_fit_clean.npy'
+### FAILED: --model probe:resnet18.tv_in1k --split test --attacks ace_uint8 --eps 0.005 --batch 32
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 195, in <module>
+    main()
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/run_attacks.py", line 182, in main
+    det = build(a.model, a.features_dir)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 163, in build
+    return build_probe_detector(rest, features_dir, device=device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/src/models.py", line 100, in build_probe_detector
+    x = np.load(features_dir / f"{stem}.npy")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/samuel-renteria/Desktop/FILES/PROJECTS/trustfake/wp1/.venv/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features/resnet18_fit_clean.npy'
+### FAILED: --model probe:resnet18.tv_in1k --split test --attacks overconf --eps 0.0157 --batch 32
+### FAST DONE

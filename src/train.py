@@ -81,8 +81,14 @@ class TrainImages(Dataset):
         return self.tf(im), int(self.y[i])
 
 
-def split_fit(manifest: pathlib.Path, seed: int, val_frac: float = 0.1):
-    """fit -> (fit_train, fit_val) by seeded permutation. calib and test are not touched."""
+def split_fit(manifest: pathlib.Path, seed: int, val_frac: float = 0.1, limit_fit: int = 0):
+    """fit -> (fit_train, fit_val) by seeded permutation. calib and test are not touched.
+
+    limit_fit > 0 caps the TRAINING set to that many images (val stays proportional). This is
+    the small-slice knob for a combinatorial sweep: it touches training only, so every reported
+    eval split is byte-identical and verify.py still passes. The cap is applied AFTER the seeded
+    permutation, so the slice is a fixed, reproducible subset for a given seed.
+    """
     t = pq.read_table(manifest, columns=["uid", "y_binary", "split"])
     keep = [i for i, s in enumerate(t.column("split").to_pylist()) if s == "fit"]
     uids = np.array([t.column("uid")[i].as_py() for i in keep])
@@ -90,6 +96,8 @@ def split_fit(manifest: pathlib.Path, seed: int, val_frac: float = 0.1):
     order = np.random.default_rng(seed).permutation(len(uids))
     n_val = int(len(uids) * val_frac)
     va, tr = order[:n_val], order[n_val:]
+    if limit_fit and limit_fit < len(tr):
+        tr = tr[:limit_fit]
     return (uids[tr], y[tr]), (uids[va], y[va])
 
 
@@ -152,7 +160,8 @@ def train(method: str, a) -> pathlib.Path:
     np.random.seed(a.seed)
     torch.backends.cudnn.benchmark = True
 
-    (tr_uid, tr_y), (va_uid, va_y) = split_fit(a.manifest, a.seed, a.val_frac)
+    (tr_uid, tr_y), (va_uid, va_y) = split_fit(a.manifest, a.seed, a.val_frac,
+                                               getattr(a, "limit_fit", 0))
     dl_tr = DataLoader(TrainImages(tr_uid, tr_y, True), batch_size=a.batch, shuffle=True,
                        num_workers=a.workers, pin_memory=False, drop_last=True)
     dl_va = DataLoader(TrainImages(va_uid, va_y, False), batch_size=a.batch, shuffle=False,
@@ -174,8 +183,16 @@ def train(method: str, a) -> pathlib.Path:
         print(f"  [{method}] initialized from {a.init_from} "
               f"(epoch {blob['meta'].get('epoch')}, {blob['meta'].get('selection_value'):.4f})")
 
-    tag = f"{method}_eps{round(a.eps*255)}_255" if a.eps * 255 == round(a.eps * 255) else method
-    hist, best, best_path = [], -1.0, CKPT_DIR / f"{tag}.pt"
+    # --run-name gives each sweep config a UNIQUE tag. Without it the tag is method+eps only,
+    # so two configs differing in beta/steps/lr/init/seed/slice would overwrite each other's
+    # checkpoint AND their prediction stems (model_id = effb0_{tag}). The sweep MUST pass one.
+    if getattr(a, "run_name", None):
+        tag = a.run_name
+    else:
+        tag = f"{method}_eps{round(a.eps*255)}_255" if a.eps * 255 == round(a.eps * 255) else method
+    ckpt_dir = pathlib.Path(getattr(a, "ckpt_dir", None) or CKPT_DIR)
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    hist, best, best_path = [], -1.0, ckpt_dir / f"{tag}.pt"
     t0 = time.time()
     for ep in range(1, a.epochs + 1):
         # linear epsilon warm-up: open the ball only once the task is learned, otherwise the
@@ -242,6 +259,8 @@ def train(method: str, a) -> pathlib.Path:
                 "epochs_planned": a.epochs,
                 "is_last_epoch": ep == a.epochs,
                 "n_fit_train": int(len(tr_uid)), "n_fit_val": int(len(va_uid)),
+                "limit_fit": int(getattr(a, "limit_fit", 0)), "run_name": getattr(a, "run_name", None),
+                "eps_warmup_epochs": a.eps_warmup_epochs, "init_from": a.init_from,
                 "manifest": str(a.manifest), "history": hist,
                 "wall_clock_min": round((time.time() - t0) / 60, 2),
                 "note": "model selection on a held-out slice of FIT; calib and test never seen",
@@ -269,8 +288,15 @@ def main() -> None:
     ap.add_argument("--val-frac", type=float, default=0.1)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--run-name", default=None,
+                    help="unique tag for a sweep config; becomes the checkpoint name and model_id "
+                         "(effb0_{run_name}). REQUIRED per config in a sweep to avoid collisions.")
+    ap.add_argument("--limit-fit", type=int, default=0,
+                    help="cap the training set to N images (small-slice sweep); 0 = use all fit")
+    ap.add_argument("--ckpt-dir", default=None,
+                    help="write checkpoints here instead of runs/checkpoints (keep sweeps out of "
+                         "the canonical dir)")
     a = ap.parse_args()
-    CKPT_DIR.mkdir(parents=True, exist_ok=True)
     for m in a.methods:
         print(f"=== {m} ===", flush=True)
         train(m, a)

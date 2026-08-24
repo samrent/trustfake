@@ -72,6 +72,11 @@ PROFILES = {
     # holdout is same-generation-family data that no probe, temperature, threshold, attack or
     # narrative in this repo has ever touched -- the F2 (test-peeking) defence.
     "train_holdout": dict(fit=30, calib=8, test=26, holdout=6),
+    # For a combinatorial sweep: a SELECTION-VAL slice, also from reserve train shards, disjoint
+    # from fit, calib, test AND holdout. It ranks configs (scored many times, deliberately "spent"
+    # on selection), so the test split's integrity is preserved for the single winner-confirmation.
+    # Unlike holdout it is NOT sealed. fit/calib/test stay byte-identical to train_holdout.
+    "train_sweep": dict(fit=30, calib=8, test=26, holdout=6, selval=8),
 }
 
 
@@ -132,6 +137,10 @@ def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
         "calib": [val_shards[i] for i in val_order[: n["calib"]]],
         "test": [val_shards[i] for i in val_order[n["calib"]: n["calib"] + n["test"]]],
         **({"holdout": train_shards[n["fit"]: n["fit"] + n["holdout"]]} if n.get("holdout") else {}),
+        # selval draws from reserve shards AFTER fit and holdout, so it is disjoint from both by
+        # construction (and from calib/test, which are validation shards).
+        **({"selval": train_shards[n["fit"] + n.get("holdout", 0):
+                                   n["fit"] + n.get("holdout", 0) + n["selval"]]} if n.get("selval") else {}),
     }
 
     # ---- structural assertions: these are the firewall, not comments about it
@@ -139,6 +148,11 @@ def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
         assert not (set(p.name for p in assign["fit"]) & set(p.name for p in assign["holdout"])), \
             "holdout shares a shard with fit -- it would not be unseen"
         assert all(p.name.startswith("train-") for p in assign["holdout"])
+    if "selval" in assign:
+        sel = set(p.name for p in assign["selval"])
+        other = set(p.name for p in assign["fit"]) | set(p.name for p in assign.get("holdout", []))
+        assert not (sel & other), "selval shares a shard with fit/holdout -- selection would leak"
+        assert all(p.name.startswith("train-") for p in assign["selval"])
     assert all(p.name.startswith("train-") for p in assign["fit"])
     assert all(p.name.startswith("validation-") for p in assign["calib"] + assign["test"])
     assert not (set(p.name for p in assign["calib"]) & set(p.name for p in assign["test"])), \
@@ -150,7 +164,7 @@ def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
         idx = _read_index(paths)
         keep = _balance(idx, np.random.default_rng(seed + 1000 + si), balance)
         lab = idx["label"][keep]
-        source = "train" if split in ("fit", "holdout") else "validation"
+        source = "train" if split in ("fit", "holdout", "selval") else "validation"
         rows["uid"].extend([f"{source}:{idx['img_id'][i]}" for i in keep])
         rows["img_id"].extend([idx["img_id"][i] for i in keep])
         rows["shard"].extend([idx["shard"][i] for i in keep])

@@ -2,3 +2,14 @@
 detector tf_efficientnet_b0 (probe)
   predictions_tf_efficientnet_b0_test_underconf_eps0.0157_s20     15316 imgs   340s  eff_eps 0.01570  preserved 0.4939
 detector effb0_standard_eps2_255 (checkpoint)
+  predictions_effb0_standard_eps2_255_test_underconf_eps0.0157_s20  15316 imgs   383s  eff_eps 0.01570  preserved 0.4419
+detector effb0_at_pgd_eps2_255 (checkpoint)
+  predictions_effb0_at_pgd_eps2_255_test_underconf_eps0.0157_s20  15316 imgs   411s  eff_eps 0.01570  preserved 0.8220
+detector effb0_trades_eps2_255 (checkpoint)
+  predictions_effb0_trades_eps2_255_test_underconf_eps0.0157_s20  15316 imgs   405s  eff_eps 0.01570  preserved 0.8455
+### D2: AutoAttack (safe composition) on base probe + 3 arms
+detector tf_efficientnet_b0 (probe)
+  predictions_tf_efficientnet_b0_test_autoattack_eps0.00784       15316 imgs  1762s  eff_eps 0.00652  preserved 0.1689
+detector effb0_standard_eps2_255 (checkpoint)
+  predictions_effb0_standard_eps2_255_test_autoattack_eps0.00784  15316 imgs  1786s  eff_eps 0.00661  preserved 0.1565
+detector effb0_at_pgd_eps2_255 (checkpoint)

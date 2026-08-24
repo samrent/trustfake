@@ -1,9 +1,9 @@
 {
-  "written": 11635,
-  "skipped": 5182,
+  "written": 0,
+  "skipped": 4556,
   "failed": 0,
-  "seconds": 56.6,
-  "img_per_s": 205.6,
+  "seconds": 1.2,
+  "img_per_s": 0.0,
   "short_side": 256,
   "quality": 95,
   "workers": 4,
