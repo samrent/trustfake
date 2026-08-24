@@ -62,11 +62,32 @@ def grid_A(limit_fit: int, epochs: int) -> list[dict]:
     return cfgs
 
 
-GRIDS = {
-    "A": grid_A,
-    # "B": grid_B,  # stacked/hybrid -- needs new objectives in train.py (see SWEEP-STRATEGIES.md)
-    # "C": grid_C,  # confidence-targeted defense -- needs a new objective (see SWEEP-STRATEGIES.md)
-}
+def grid_B(limit_fit: int, epochs: int) -> list[dict]:
+    """STRATEGY B (stacked/hybrid): adversarial CE + a consistency KL (method at_kl)."""
+    base = dict(limit_fit=limit_fit, epochs=epochs, batch=32, manifest=str(MANIFEST), inner_steps=7)
+    return [{**base, "method": "at_kl", "eps": eps / 255, "beta": beta,
+             "run_name": f"sw_atkl_e{eps}_b{beta}"}
+            for eps in (2, 4) for beta in (3, 6)]
+
+
+def grid_C(limit_fit: int, epochs: int) -> list[dict]:
+    """STRATEGY C (confidence-targeted defense): adversarial training vs the confidence attack
+    (at_conf), and a confidence penalty on errors (conf_reg)."""
+    base = dict(limit_fit=limit_fit, epochs=epochs, batch=32, manifest=str(MANIFEST))
+    cfgs = [{**base, "method": "at_conf", "eps": eps / 255, "inner_steps": 7,
+             "run_name": f"sw_atconf_e{eps}"} for eps in (2, 4)]
+    cfgs += [{**base, "method": "conf_reg", "eps": 2 / 255, "lambda_reg": lam,
+              "run_name": f"sw_confreg_l{lam}"} for lam in (0.5, 1.0, 2.0)]
+    return cfgs
+
+
+GRIDS = {"A": grid_A, "B": grid_B, "C": grid_C}
+
+
+def build_grid(strategy: str, limit_fit: int, epochs: int) -> list[dict]:
+    if strategy == "all":
+        return grid_A(limit_fit, epochs) + grid_B(limit_fit, epochs) + grid_C(limit_fit, epochs)
+    return GRIDS[strategy](limit_fit, epochs)
 
 
 def train_config(cfg: dict) -> pathlib.Path:
@@ -79,7 +100,7 @@ def train_config(cfg: dict) -> pathlib.Path:
            "--ckpt-dir", str(CKPT), "--limit-fit", str(cfg["limit_fit"]),
            "--epochs", str(cfg["epochs"]), "--batch", str(cfg["batch"]),
            "--eps", repr(cfg["eps"]), "--manifest", cfg["manifest"]]
-    for k in ("inner_steps", "beta", "eps_warmup_epochs", "lr"):
+    for k in ("inner_steps", "beta", "lambda_reg", "eps_warmup_epochs", "lr"):
         if k in cfg:
             cmd += [f"--{k.replace('_', '-')}", str(cfg[k])]
     if cfg.get("init_from"):
@@ -176,7 +197,7 @@ def rank(cfgs: list[dict], clean_floor: float, out: pathlib.Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--strategy", choices=list(GRIDS), default="A")
+    ap.add_argument("--strategy", choices=list(GRIDS) + ["all"], default="A")
     ap.add_argument("--limit-fit", type=int, default=3000)
     ap.add_argument("--epochs", type=int, default=8)
     ap.add_argument("--clean-floor", type=float, default=0.75)
@@ -189,14 +210,18 @@ def main() -> None:
         cfgs = [dict(method="at_pgd", eps=2 / 255, inner_steps=3, limit_fit=800, epochs=2,
                      batch=32, manifest=str(MANIFEST), run_name="sw_smoke")]
     else:
-        cfgs = GRIDS[a.strategy](a.limit_fit, a.epochs)
+        cfgs = build_grid(a.strategy, a.limit_fit, a.epochs)
 
     print(f"sweep strategy {a.strategy}: {len(cfgs)} config(s), limit_fit={cfgs[0]['limit_fit']}, "
-          f"epochs={cfgs[0]['epochs']}")
+          f"epochs={cfgs[0]['epochs']}", flush=True)
     if not a.rank_only:
-        for cfg in cfgs:
-            train_config(cfg)
-            eval_config(cfg)
+        for i, cfg in enumerate(cfgs, 1):
+            print(f"--- [{i}/{len(cfgs)}] {cfg['run_name']} ({cfg['method']}) ---", flush=True)
+            try:                                    # one bad config must not kill an overnight run
+                train_config(cfg)
+                eval_config(cfg)
+            except Exception as e:
+                print(f"### CONFIG FAILED: {cfg['run_name']}: {type(e).__name__}: {e}", flush=True)
     rank(cfgs, a.clean_floor, ROOT / "runs" / "sweep_ranking.md")
 
 

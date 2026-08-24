@@ -139,6 +139,30 @@ def pgd_kl(model, x, eps, alpha, steps, scaler):
     return (x + delta).detach()
 
 
+def pgd_overconf(model, x, eps, alpha, steps, scaler):
+    """Inner attack for the CONFIDENCE defense: worst-case confidence inflation (Ledda et al.).
+
+    Freeze the clean prediction yhat, then DESCEND cross-entropy to yhat -- pushing probability
+    mass toward the already-predicted class, i.e. inflating confidence without a label. The outer
+    loss (method at_conf) then trains the model to still classify these confidence-inflated inputs
+    CORRECTLY, so an attacker cannot manufacture confident-but-WRONG predictions -- which is exactly
+    what the ACE / over-confidence attack does to the moderation layer. This targets the confidence
+    axis, not the label axis that PGD-AT/TRADES defend.
+    """
+    with torch.no_grad(), torch.amp.autocast("cuda"):
+        yhat = model(x).float().argmax(1)
+    delta = (0.001 * torch.randn_like(x)).detach()
+    delta = ((x + delta).clamp(0, 1) - x).detach()
+    for _ in range(steps):
+        delta.requires_grad_(True)
+        with torch.amp.autocast("cuda"):
+            loss = F.cross_entropy(model(x + delta), yhat)
+        g, = torch.autograd.grad(scaler.scale(loss), delta)
+        delta = (delta.detach() - alpha * g.sign()).clamp(-eps, eps)   # DESCEND: inflate confidence
+        delta = ((x + delta).clamp(0, 1) - x)
+    return (x + delta).detach()
+
+
 # ---------------------------------------------------------------------------- training
 
 def evaluate(model, dl, eps, alpha, steps, scaler, adv: bool):
@@ -217,6 +241,33 @@ def train(method: str, a) -> pathlib.Path:
                     loss = (F.cross_entropy(logits_c, y) + a.beta *
                             F.kl_div(F.log_softmax(logits_a, 1), F.softmax(logits_c, 1),
                                      reduction="batchmean"))
+            elif method == "at_kl":
+                # STRATEGY B (hybrid): adversarial CE + a consistency KL between the adversarial
+                # and clean predictions. Unlike TRADES (CE on CLEAN + KL), the CE here is on the
+                # ADVERSARIAL example -- a genuine AT + regularizer stack, not a rename of TRADES.
+                xa = pgd_ce(model, x, y, eps, alpha, a.inner_steps, scaler)
+                with torch.amp.autocast("cuda"):
+                    logits_a = model(xa).float()
+                    logits_c = model(x).float()
+                    loss = (F.cross_entropy(logits_a, y) + a.beta *
+                            F.kl_div(F.log_softmax(logits_a, 1), F.softmax(logits_c.detach(), 1),
+                                     reduction="batchmean"))
+            elif method == "at_conf":
+                # STRATEGY C1: adversarial training against the CONFIDENCE attack. Inner max
+                # inflates confidence (pgd_overconf); outer CE forces correctness on those inputs,
+                # so confidence cannot be inflated on wrong predictions.
+                xa = pgd_overconf(model, x, eps, alpha, a.inner_steps, scaler)
+                with torch.amp.autocast("cuda"):
+                    loss = F.cross_entropy(model(xa), y)
+            elif method == "conf_reg":
+                # STRATEGY C2: no inner attack -- a confidence PENALTY on errors. Penalize high
+                # softmax confidence on the (detached) misclassified examples, directly optimizing
+                # the failure-prediction property the moderation layer reads.
+                with torch.amp.autocast("cuda"):
+                    logits = model(x).float()
+                    p = F.softmax(logits, 1)
+                    wrong = (logits.argmax(1) != y).float().detach()
+                    loss = F.cross_entropy(logits, y) + a.lambda_reg * (p.max(1).values * wrong).mean()
             else:
                 raise ValueError(method)
             opt.zero_grad(set_to_none=True)
@@ -231,7 +282,7 @@ def train(method: str, a) -> pathlib.Path:
         rob_acc = evaluate(model, dl_va, eps, alpha, a.eval_steps, scaler, adv=True)
         # selection metric: robust accuracy for the defenses, clean for the standard model --
         # each method is selected on what it is trying to optimize, stated rather than assumed
-        sel = clean_acc if method == "standard" else rob_acc
+        sel = clean_acc if method in ("standard", "conf_reg", "at_conf") else rob_acc
         hist.append({"epoch": ep, "loss": run_loss / seen, "eps": eps, "fit_val_clean": clean_acc,
                      "fit_val_robust_pgd": rob_acc, "selected_on": sel,
                      "lr": sched.get_last_lr()[0], "minutes": round((time.time() - t0) / 60, 2)})
@@ -242,10 +293,11 @@ def train(method: str, a) -> pathlib.Path:
             best = sel
             save_checkpoint(model, best_path, {
                 "model_id": f"effb0_{tag}", "backbone": a.backbone, "method": method,
-                "epoch": ep, "selected_on": "fit_val_clean" if method == "standard" else "fit_val_robust_pgd",
+                "epoch": ep, "selected_on": "fit_val_clean" if method in ("standard", "conf_reg", "at_conf") else "fit_val_robust_pgd",
                 "selection_value": sel, "eps": eps, "alpha": alpha,
-                "inner_steps": a.inner_steps if method != "standard" else 0,
-                "beta": a.beta if method == "trades" else None,
+                "inner_steps": a.inner_steps if method not in ("standard", "conf_reg") else 0,
+                "beta": a.beta if method in ("trades", "at_kl") else None,
+                "lambda_reg": a.lambda_reg if method == "conf_reg" else None,
                 "epochs": a.epochs, "batch": a.batch, "lr": a.lr, "seed": a.seed,
                 # Budget parity is judged on steps the RUN spends, which is
                 # epochs_planned * steps_per_epoch once the schedule completes -- not on
@@ -284,7 +336,8 @@ def main() -> None:
     ap.add_argument("--alpha", type=float, default=0.5 / 255)
     ap.add_argument("--inner-steps", type=int, default=7)
     ap.add_argument("--eval-steps", type=int, default=10)
-    ap.add_argument("--beta", type=float, default=6.0, help="TRADES beta (Zhang et al. 2019)")
+    ap.add_argument("--beta", type=float, default=6.0, help="TRADES / at_kl beta (Zhang et al. 2019)")
+    ap.add_argument("--lambda-reg", type=float, default=1.0, help="conf_reg confidence-penalty weight")
     ap.add_argument("--val-frac", type=float, default=0.1)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0)
