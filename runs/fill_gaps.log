@@ -1,0 +1,4 @@
+### D2: under-confidence (fast) on base probe + 3 arms
+detector tf_efficientnet_b0 (probe)
+  predictions_tf_efficientnet_b0_test_underconf_eps0.0157_s20     15316 imgs   340s  eff_eps 0.01570  preserved 0.4939
+detector effb0_standard_eps2_255 (checkpoint)

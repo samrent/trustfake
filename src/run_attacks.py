@@ -153,6 +153,8 @@ def main() -> None:
     ap.add_argument("--sample", type=int, default=None,
                     help="class-balanced seeded subsample; use the SAME value for every row")
     ap.add_argument("--sample-seed", type=int, default=0)
+    ap.add_argument("--unseal-holdout", action="store_true",
+                    help="one-shot: permit scoring the sealed holdout for the FINAL run only")
     ap.add_argument("--features-dir", type=pathlib.Path, default=FEATURES)
     ap.add_argument("--pred-dir", type=pathlib.Path, default=PRED)
     ap.add_argument("--model-id", default=None,
@@ -171,6 +173,12 @@ def main() -> None:
             "--limit writes the same filenames as a full run and would overwrite the "
             "canonical predictions. Pass --pred-dir runs/partial (or another directory).")
 
+    if a.split == "holdout" and not a.unseal_holdout:
+        raise SystemExit(
+            "REFUSING to score the SEALED holdout. It exists for ONE final confirmation run "
+            "and must not be touched during development -- that is the whole F2 defence. If "
+            "this really is that final run, pass --unseal-holdout, and understand that any "
+            "model or threshold change afterwards invalidates the number (see HOLDOUT.md).")
     det = build(a.model, a.features_dir)
     if a.model_id:
         det.model_id = a.model_id

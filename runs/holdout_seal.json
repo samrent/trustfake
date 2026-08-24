@@ -1,0 +1,17 @@
+{
+  "n": 3376,
+  "sha256": "d10bc0a552012580dac0aae484fd52eb2d3a518733b37c99122787007b40dc28",
+  "shards": [
+    "train-00030-of-00249.parquet",
+    "train-00031-of-00249.parquet",
+    "train-00032-of-00249.parquet",
+    "train-00033-of-00249.parquet",
+    "train-00034-of-00249.parquet",
+    "train-00035-of-00249.parquet"
+  ],
+  "manifest": "runs/manifest_v3_holdout.parquet",
+  "source": "SID-Set train shards, disjoint from the 30 fit shards",
+  "sealed_at": "2026-08-24 (camp day 1)",
+  "status": "SEALED -- never scored; reserved for one final confirmation run",
+  "disjoint_from_fit_calib_test": true
+}

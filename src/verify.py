@@ -61,6 +61,14 @@ def check(manifests: list[pathlib.Path], pred_dir: pathlib.Path) -> tuple[list[s
                 fails.append(f"{split} differs between manifests: {prev} vs {(n, sha)}")
             expect.setdefault(split, (n, sha))
 
+    seal = ROOT / "runs" / "holdout_seal.json"
+    if seal.exists():
+        scored = list(pred_dir.glob("predictions_*_holdout_*.json"))
+        unsealed = (ROOT / "runs" / "holdout_UNSEALED.flag").exists()
+        if scored and not unsealed:
+            fails.append(f"the SEALED holdout has been scored ({len(scored)} files) without an "
+                         f"unseal flag -- the F2 defence is broken; see HOLDOUT.md")
+
     sidecars = sorted(pred_dir.glob("predictions_*.json"))
     if not sidecars:
         fails.append(f"no prediction sidecars in {pred_dir}")

@@ -66,6 +66,12 @@ PROFILES = {
     # That is what lets the defense comparison scale its training set without moving the
     # splits every earlier number was reported on.
     "train": dict(fit=30, calib=8, test=26),
+    # A SEALED holdout for one final confirmation, drawn from train shards DISJOINT from fit.
+    # The official test split is withheld by the authors and all 34 validation shards are
+    # consumed by calib+test, so the only genuinely-unseen pool is unused train shards. The
+    # holdout is same-generation-family data that no probe, temperature, threshold, attack or
+    # narrative in this repo has ever touched -- the F2 (test-peeking) defence.
+    "train_holdout": dict(fit=30, calib=8, test=26, holdout=6),
 }
 
 
@@ -125,9 +131,14 @@ def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
         "fit": train_shards[: n["fit"]],
         "calib": [val_shards[i] for i in val_order[: n["calib"]]],
         "test": [val_shards[i] for i in val_order[n["calib"]: n["calib"] + n["test"]]],
+        **({"holdout": train_shards[n["fit"]: n["fit"] + n["holdout"]]} if n.get("holdout") else {}),
     }
 
     # ---- structural assertions: these are the firewall, not comments about it
+    if "holdout" in assign:
+        assert not (set(p.name for p in assign["fit"]) & set(p.name for p in assign["holdout"])), \
+            "holdout shares a shard with fit -- it would not be unseen"
+        assert all(p.name.startswith("train-") for p in assign["holdout"])
     assert all(p.name.startswith("train-") for p in assign["fit"])
     assert all(p.name.startswith("validation-") for p in assign["calib"] + assign["test"])
     assert not (set(p.name for p in assign["calib"]) & set(p.name for p in assign["test"])), \
@@ -139,7 +150,7 @@ def build(profile: str, seed: int, balance: str, out: pathlib.Path) -> dict:
         idx = _read_index(paths)
         keep = _balance(idx, np.random.default_rng(seed + 1000 + si), balance)
         lab = idx["label"][keep]
-        source = "train" if split == "fit" else "validation"
+        source = "train" if split in ("fit", "holdout") else "validation"
         rows["uid"].extend([f"{source}:{idx['img_id'][i]}" for i in keep])
         rows["img_id"].extend([idx["img_id"][i] for i in keep])
         rows["shard"].extend([idx["shard"][i] for i in keep])

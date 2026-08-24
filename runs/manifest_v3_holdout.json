@@ -1,0 +1,130 @@
+{
+  "manifest_sha256": "3d9b88299d31d522ae875b267079338f3c521a6e8d9658eda4a7d22f004c5688",
+  "rows": 40193,
+  "profile": "train_holdout",
+  "seed": 0,
+  "balance_policy": "binary_5050",
+  "split_provenance": "SID-Set validation split, held-out slice (official test split withheld by authors)",
+  "leakage_rule": "fit from train shards only; calib and test from disjoint validation shards",
+  "key": "uid = '<source_split>:<img_id>'; img_id alone is NOT unique across splits",
+  "img_id_collisions_in_manifest": 662,
+  "img_id_collisions_in_full_dataset": 19107,
+  "cache_policy": "short-side 256, JPEG q95 -- lossy, unsuitable for frequency-domain detectors; raw parquet retained for that reason",
+  "splits": {
+    "fit": {
+      "n": 16817,
+      "shards": [
+        "train-00000-of-00249.parquet",
+        "train-00001-of-00249.parquet",
+        "train-00002-of-00249.parquet",
+        "train-00003-of-00249.parquet",
+        "train-00004-of-00249.parquet",
+        "train-00005-of-00249.parquet",
+        "train-00006-of-00249.parquet",
+        "train-00007-of-00249.parquet",
+        "train-00008-of-00249.parquet",
+        "train-00009-of-00249.parquet",
+        "train-00010-of-00249.parquet",
+        "train-00011-of-00249.parquet",
+        "train-00012-of-00249.parquet",
+        "train-00013-of-00249.parquet",
+        "train-00014-of-00249.parquet",
+        "train-00015-of-00249.parquet",
+        "train-00016-of-00249.parquet",
+        "train-00017-of-00249.parquet",
+        "train-00018-of-00249.parquet",
+        "train-00019-of-00249.parquet",
+        "train-00020-of-00249.parquet",
+        "train-00021-of-00249.parquet",
+        "train-00022-of-00249.parquet",
+        "train-00023-of-00249.parquet",
+        "train-00024-of-00249.parquet",
+        "train-00025-of-00249.parquet",
+        "train-00026-of-00249.parquet",
+        "train-00027-of-00249.parquet",
+        "train-00028-of-00249.parquet",
+        "train-00029-of-00249.parquet"
+      ],
+      "by_label": {
+        "real": 8409,
+        "full_synthetic": 4204,
+        "tampered": 4204
+      },
+      "prior_fake": 0.4999702681810073
+    },
+    "calib": {
+      "n": 4684,
+      "shards": [
+        "validation-00002-of-00034.parquet",
+        "validation-00011-of-00034.parquet",
+        "validation-00025-of-00034.parquet",
+        "validation-00023-of-00034.parquet",
+        "validation-00019-of-00034.parquet",
+        "validation-00004-of-00034.parquet",
+        "validation-00033-of-00034.parquet",
+        "validation-00032-of-00034.parquet"
+      ],
+      "by_label": {
+        "real": 2342,
+        "full_synthetic": 1171,
+        "tampered": 1171
+      },
+      "prior_fake": 0.5
+    },
+    "test": {
+      "n": 15316,
+      "shards": [
+        "validation-00026-of-00034.parquet",
+        "validation-00010-of-00034.parquet",
+        "validation-00018-of-00034.parquet",
+        "validation-00006-of-00034.parquet",
+        "validation-00020-of-00034.parquet",
+        "validation-00028-of-00034.parquet",
+        "validation-00003-of-00034.parquet",
+        "validation-00000-of-00034.parquet",
+        "validation-00008-of-00034.parquet",
+        "validation-00016-of-00034.parquet",
+        "validation-00021-of-00034.parquet",
+        "validation-00012-of-00034.parquet",
+        "validation-00027-of-00034.parquet",
+        "validation-00013-of-00034.parquet",
+        "validation-00007-of-00034.parquet",
+        "validation-00005-of-00034.parquet",
+        "validation-00017-of-00034.parquet",
+        "validation-00014-of-00034.parquet",
+        "validation-00029-of-00034.parquet",
+        "validation-00022-of-00034.parquet",
+        "validation-00009-of-00034.parquet",
+        "validation-00030-of-00034.parquet",
+        "validation-00024-of-00034.parquet",
+        "validation-00001-of-00034.parquet",
+        "validation-00015-of-00034.parquet",
+        "validation-00031-of-00034.parquet"
+      ],
+      "by_label": {
+        "real": 7658,
+        "full_synthetic": 3829,
+        "tampered": 3829
+      },
+      "prior_fake": 0.5
+    },
+    "holdout": {
+      "n": 3376,
+      "shards": [
+        "train-00030-of-00249.parquet",
+        "train-00031-of-00249.parquet",
+        "train-00032-of-00249.parquet",
+        "train-00033-of-00249.parquet",
+        "train-00034-of-00249.parquet",
+        "train-00035-of-00249.parquet"
+      ],
+      "by_label": {
+        "real": 1688,
+        "full_synthetic": 844,
+        "tampered": 844
+      },
+      "prior_fake": 0.5
+    }
+  },
+  "regenerate": "python -m src.manifest --profile train_holdout --seed 0 --balance binary_5050 --out runs/manifest_v3_holdout.parquet"
+}

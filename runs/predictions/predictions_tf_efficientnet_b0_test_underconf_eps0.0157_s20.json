@@ -1,0 +1,36 @@
+{
+  "model_id": "tf_efficientnet_b0",
+  "backbone": "tf_efficientnet_b0.ns_jft_in1k",
+  "condition": "underconf_eps0.0157_s20",
+  "split": "test",
+  "n": 15316,
+  "seconds": 339.8,
+  "key": "uid",
+  "batch": 32,
+  "timestamp": "2026-08-24T11:55:33",
+  "seed": 0,
+  "manifest_sha": "f95e42e296c2d3c61c274bb859f984e591b820281c0c068590763d302dbd13c4",
+  "provenance": {
+    "kind": "probe",
+    "backbone": "tf_efficientnet_b0.ns_jft_in1k",
+    "C": 0.01,
+    "fit_n": 6756,
+    "feature_dim": 1280,
+    "fit_train_acc": 0.8984606275902901,
+    "features_dir": "/home/samuel-renteria/Desktop/FILES/DATASETS/sid-set/features"
+  },
+  "attack": "underconf",
+  "family": "confidence",
+  "direction": "under_confidence",
+  "eps": 0.0157,
+  "uses_labels": false,
+  "steps": 20,
+  "eps_effective_mean": 0.01570001244544983,
+  "eps_effective_max": 0.01570001244544983,
+  "frac_perturbed": 1.0,
+  "label_preservation": 0.49389352822104676,
+  "attack_kwargs": {
+    "eps": 0.0157,
+    "steps": 20
+  }
+}
