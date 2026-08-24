@@ -42,6 +42,7 @@ import pathlib
 import numpy as np
 
 from . import metrics as M
+from .sigma import load_sigma
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PRED = ROOT / "runs" / "predictions"
@@ -50,19 +51,31 @@ ALLOW, REVIEW, FLAG = 0, 1, 2
 ACTION_NAMES = {ALLOW: "allow", REVIEW: "review", FLAG: "flag"}
 
 
-def actions(p_fake: np.ndarray, t_low: float, t_high: float) -> np.ndarray:
+def actions(p_fake: np.ndarray, t_low: float, t_high: float,
+            sigma: np.ndarray = None, t_sigma: float = None) -> np.ndarray:
+    """The deck's decision rule. Risk axis p(fake): below t_low ALLOW, above t_high FLAG,
+    between REVIEW. Uncertainty axis (optional): sigma above t_sigma forces REVIEW regardless
+    of p(fake) -- ALLOW = confident real AND certain; FLAG = confident fake AND certain.
+
+    With sigma=None this is exactly the one-axis rule, so every existing call is unchanged.
+    The uncertainty gate only ever MOVES items into REVIEW; it never auto-decides, so it
+    cannot increase residual risk, only trade coverage for safety."""
     p = np.asarray(p_fake, dtype=np.float64)
     out = np.full(p.shape, REVIEW, dtype=np.int8)
     out[p < t_low] = ALLOW
     out[p > t_high] = FLAG
+    if sigma is not None and t_sigma is not None:
+        out[np.asarray(sigma, dtype=np.float64) > t_sigma] = REVIEW
     return out
 
 
-def evaluate_policy(p_fake, y, t_low: float, t_high: float) -> dict:
-    """Deployment indicators for one (policy, condition) pair. y: 1 = fake, 0 = real."""
+def evaluate_policy(p_fake, y, t_low: float, t_high: float,
+                    sigma=None, t_sigma: float = None) -> dict:
+    """Deployment indicators for one (policy, condition) pair. y: 1 = fake, 0 = real.
+    Pass sigma + t_sigma for the two-axis rule."""
     p = np.asarray(p_fake, dtype=np.float64)
     y = np.asarray(y).astype(int)
-    a = actions(p, t_low, t_high)
+    a = actions(p, t_low, t_high, sigma, t_sigma)
     auto = a != REVIEW
     n = y.size
 
@@ -129,6 +142,20 @@ def fit_thresholds(p_fake, y, sla_residual_risk: float = 0.05,
     return best
 
 
+def fit_sigma_gate(sigma, clean_review_budget: float = 0.10) -> float:
+    """Freeze the uncertainty gate at a CLEAN review budget: review the most-uncertain
+    `clean_review_budget` fraction of clean-calib items. t_sigma = the (1 - budget) quantile
+    of clean-calib sigma.
+
+    This is the honest design. On clean the gate costs a little extra review for little gain.
+    Its value is entirely UNDER ATTACK: a confidence attack that leaves accuracy untouched
+    still drives model uncertainty up, so far more items cross the frozen t_sigma and are
+    sent to a human instead of being wrongly auto-decided. The gate is fitted on clean and
+    never sees attacked data, so the rescue is not an oracle."""
+    q = float(np.quantile(np.asarray(sigma, np.float64), 1.0 - clean_review_budget))
+    return q
+
+
 def p_fake_from(logits: np.ndarray, temperature: float) -> np.ndarray:
     return M.softmax(logits, temperature)[:, 1]
 
@@ -136,7 +163,7 @@ def p_fake_from(logits: np.ndarray, temperature: float) -> np.ndarray:
 def load(stem: str, pred: pathlib.Path = PRED):
     z = np.load(pred / f"{stem}.npz", allow_pickle=False)
     meta = json.loads((pred / f"{stem}.json").read_text())
-    return z["logits"].astype(np.float64), z["y"].astype(int), z["label"].astype(int), meta
+    return z["logits"].astype(np.float64), z["y"].astype(int), z["label"].astype(int), meta, z["uid"]
 
 
 COLS = [("condition", 26), ("acc", 7), ("coverage", 9), ("review%", 8), ("resid_risk", 11),
@@ -162,6 +189,11 @@ def main() -> None:
     ap.add_argument("--conditions", nargs="*", default=["clean"])
     ap.add_argument("--split", default="test")
     ap.add_argument("--sla", type=float, default=0.05, help="max residual risk on auto-decisions")
+    ap.add_argument("--sigma-budget", type=float, default=0.10,
+                    help="clean review budget for the uncertainty gate")
+    ap.add_argument("--sigma-producer", default=None,
+                    help="e.g. ens3 -> loads runs/sigma/sigma_{producer}_{split}_{cond}.npz and "
+                         "adds the uncertainty gate (the deck's second axis)")
     ap.add_argument("--sla-missed-fake", type=float, default=None)
     ap.add_argument("--pred-dir", type=pathlib.Path, default=PRED)
     ap.add_argument("--out", type=pathlib.Path, default=ROOT / "runs" / "moderation_report.md")
@@ -172,9 +204,18 @@ def main() -> None:
         from .baselines import headline
         print(headline(json.loads(blp.read_text())) + "\n")
 
-    cl, cy, _, _ = load(f"predictions_{a.model}_calib_clean", a.pred_dir)
+    clz = np.load(a.pred_dir / f"predictions_{a.model}_calib_clean.npz", allow_pickle=False)
+    cl, cy = clz["logits"].astype(np.float64), clz["y"].astype(int)
     T = M.fit_temperature(cl, cy)
     t_low, t_high = fit_thresholds(p_fake_from(cl, T), cy, a.sla, a.sla_missed_fake)
+
+    t_sigma = None
+    if a.sigma_producer:
+        from . import sigma as SIG
+        csig = load_sigma(f"sigma_{a.sigma_producer}_calib_clean", clz["uid"])
+        t_sigma = fit_sigma_gate(csig, a.sigma_budget)
+        print(f"sigma gate ({a.sigma_producer}) fitted on clean calib: t_sigma = {t_sigma:.5f} "
+              f"(reviews the {a.sigma_budget:.0%} most-uncertain clean items; frozen)")
     calib_result = evaluate_policy(p_fake_from(cl, T), cy, t_low, t_high)
     print(f"policy fitted on CLEAN CALIB (n={cy.size}): T={T:.4f}  "
           f"t_low={t_low:.4f}  t_high={t_high:.4f}   SLA residual risk <= {a.sla:.0%}")
@@ -187,7 +228,7 @@ def main() -> None:
     rows = []
     for cond in a.conditions:
         try:
-            lo, y, lab, meta = load(f"predictions_{a.model}_{a.split}_{cond}", a.pred_dir)
+            lo, y, lab, meta, uid = load(f"predictions_{a.model}_{a.split}_{cond}", a.pred_dir)
         except FileNotFoundError:
             print(f"  (skipping {cond}: no predictions)")
             continue
@@ -195,10 +236,31 @@ def main() -> None:
         r = evaluate_policy(p, y, t_low, t_high)
         r["condition"] = cond
         r["accuracy"] = float(((p > 0.5).astype(int) == y).mean())
+        if a.sigma_producer and t_sigma is not None:
+            try:
+                sg = load_sigma(f"sigma_{a.sigma_producer}_{a.split}_{cond}", uid)
+                r2 = evaluate_policy(p, y, t_low, t_high, sg, t_sigma)
+                r["residual_risk_2axis"] = r2["residual_risk"]
+                r["review_rate_2axis"] = r2["review_rate"]
+                r["coverage_2axis"] = r2["coverage"]
+            except (FileNotFoundError, ValueError):
+                r["residual_risk_2axis"] = None
         rows.append(r)
 
     table = fmt(rows)
     print("\n" + table)
+
+    if a.sigma_producer and t_sigma is not None:
+        cmp = ["", "1-axis (p_fake only)  vs  2-axis (+ uncertainty gate):",
+               f"{'condition':<26}{'resid 1ax':>11}{'resid 2ax':>11}{'review 1ax':>12}{'review 2ax':>12}"]
+        for r in rows:
+            if r.get("residual_risk_2axis") is None:
+                continue
+            def pc(v):
+                return "—" if v is None or (isinstance(v, float) and np.isnan(v)) else f"{v*100:.2f}%"
+            cmp.append(f"{r['condition']:<26}{pc(r['residual_risk']):>11}{pc(r['residual_risk_2axis']):>11}"
+                       f"{pc(r['review_rate']):>12}{pc(r['review_rate_2axis']):>12}")
+        print("\n".join(cmp))
     a.out.write_text(
         f"# WP4 selective moderation -- {a.model}\n\n"
         f"- policy fitted on CLEAN CALIB and frozen: `t_low={t_low:.4f}`, `t_high={t_high:.4f}`, "

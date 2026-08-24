@@ -1,0 +1,14 @@
+{
+  "producer": "ens3",
+  "split": "test",
+  "condition": "overconf_eps0.0157_s20",
+  "n": 15316,
+  "semantics": "higher = more uncertain",
+  "scale": "std of p(fake) in [0, 0.5]",
+  "members": [
+    "effb0_standard_eps2_255",
+    "effb0_at_pgd_eps2_255",
+    "effb0_trades_eps2_255"
+  ],
+  "note": "deep ensemble, T=1, post-hoc from prediction npz"
+}

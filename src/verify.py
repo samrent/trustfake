@@ -130,6 +130,26 @@ def check(manifests: list[pathlib.Path], pred_dir: pathlib.Path) -> tuple[list[s
             fails.append(f"{key}: rows produced at different batch sizes {conds} -- cuDNN is not "
                          f"bit-identical across batch shapes; regenerate at one batch size")
 
+    # sigma files (the uncertainty seam) must be uid-aligned to their split and finite
+    sig_dir = ROOT / "runs" / "sigma"
+    for sj in sorted(sig_dir.glob("sigma_*.json")) if sig_dir.exists() else []:
+        meta = json.loads(sj.read_text())
+        snpz = sj.with_suffix(".npz")
+        if not snpz.exists():
+            fails.append(f"{sj.stem}: sigma sidecar without npz")
+            continue
+        z = np.load(snpz, allow_pickle=False)
+        if "sigma" not in z or "uid" not in z:
+            fails.append(f"{sj.stem}: sigma npz missing uid/sigma")
+            continue
+        if not np.all(np.isfinite(z["sigma"])):
+            fails.append(f"{sj.stem}: sigma contains non-finite values")
+        if len(z["uid"]) != len(set(z["uid"].tolist())):
+            fails.append(f"{sj.stem}: duplicate uids in sigma")
+        sp = meta.get("split")
+        if sp in expect and set(z["uid"].tolist()) - set(split_uid_list(manifests[0], sp)):
+            fails.append(f"{sj.stem}: sigma uids not a subset of the {sp} split")
+
     for ck in sorted((ROOT / "runs" / "checkpoints").glob("*.json")):
         m = json.loads(ck.read_text())
         for field in ("method", "backbone", "seed", "epochs_planned", "selected_epoch"):
