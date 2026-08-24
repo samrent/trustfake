@@ -1,0 +1,319 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The harness · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html" class="here">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>The harness — <code>metrics.py</code> is the load-bearing artifact</h1>
+<p class="lead">The models are borrowed. The attacks are borrowed. What this project actually
+owns and ships is the thing that <em>scores</em> them: a data-agnostic scoring module and a
+strict file contract, so that every other subgroup's numbers pass through one code path and
+can never quietly disagree.</p>
+
+<div class="box"><div class="t">The one idea to keep</div>
+Think of the harness as a <b>schema plus a referee</b>, not a model. WP2 (attacks) and WP3
+(defenses) each produce arrays. They hand those arrays to WP1, and WP1 turns them into the
+same twelve numbers every time. Because the referee never sees a model or a dataset — only
+<code>(scores, labels)</code> — an attacked run, a robustly-trained run, and a whole second
+dataset are all just <em>different inputs to the same function</em>. That is the entire
+design, and it is why <code>src/metrics.py</code> is the deliverable and the checkpoints are
+disposable.</div>
+
+<div class="kv">
+<b>Files this page rests on</b>
+<span><code>src/metrics.py</code> · <code>src/verify.py</code> · <code>README.md</code> ·
+<code>runs/predictions/*.npz</code> (loaded and re-scored with numpy for this page)</span>
+<b>Everything below was re-derived</b>
+<span>by loading the stored <code>.npz</code> files and calling the pure-numpy functions in
+<code>metrics.py</code> — no GPU, no model.</span>
+</div>
+
+<h2>The file contract — the npz, and why <code>uid</code> not <code>img_id</code></h2>
+
+<p>Nothing in this project is trusted until it is written to disk in one exact shape. Every
+prediction — clean, attacked, or defended — is one <code>.npz</code> (a small zip of numpy
+arrays) plus a JSON sidecar of metadata. This is the interface published on Day 1, before any
+result exists.</p>
+
+<pre><code>runs/predictions/predictions_{model}_{split}_{condition}.npz
+    uid     str          THE key: "&lt;source_split&gt;:&lt;img_id&gt;"   -- join on THIS
+    img_id  str          dataset id, traceability only  (NOT unique -- see below)
+    y       int8         0 = real, 1 = fake (synthetic OR tampered, folded together)
+    label   int8         original 3-class label, so results can break out by difficulty
+    logits  float32[n,2] [0, margin];   softmax -> p(fake) = sigmoid(margin)
++ JSON sidecar {model_id, manifest_sha, condition, split, seed, batch, timestamp, ...}</code></pre>
+
+<p>I loaded <code>predictions_tf_efficientnet_b0_test_clean.npz</code> to confirm the shape:
+fields <code>uid, img_id, y, label, logits</code>; logits <code>float32 (15316, 2)</code>;
+<code>y</code> is <code>int8</code> taking values {0,1}; and all 15,316 <code>uid</code>s are
+distinct. A sample <code>uid</code> reads <code>validation:tampered_07245</code>.</p>
+
+<div class="box bad"><div class="t">Why the key is <code>uid</code> and never <code>img_id</code></div>
+<code>img_id</code> looks like a unique identifier and is not one.
+<b>19,107</b> img_ids appear in <em>both</em> the train and validation splits — 10,000
+fully-synthetic and 9,107 tampered — because those classes are numbered sequentially and the
+counter restarts in each split (<code>runs/img_id_collisions.json</code>). So
+<code>full_synthetic_000155</code> exists in train and in validation as <em>different images
+with different bytes</em>. The real class is content-hash named and has <b>zero</b>
+collisions — which is the trap: spot-check a few reals and the problem is invisible.
+Keying a feature cache or joining two npz files on <code>img_id</code> silently merges the
+wrong rows and nothing errors. The fix is a compound key: <code>uid =
+"&lt;source_split&gt;:&lt;img_id&gt;"</code>. See <a href="dataset.html">the dataset page</a>
+for the full account.</div>
+
+<p><b><code>condition</code> is mandatory from line one.</b> It is the label that says what
+was done to the pixels before the model saw them — <code>clean</code>,
+<code>ace_uint8_eps0.005</code>, <code>jpeg_q50</code>, <code>pgd_linf_...</code>. Without it,
+an attacked row and a clean row are indistinguishable strings in a folder, and the whole
+comparison is meaningless. It travels in the filename <em>and</em> the sidecar.</p>
+
+<h2>The metrics a newcomer needs — one at a time</h2>
+
+<p>The task is binary: real (0) vs fake (1). But a moderation pipeline does not just classify
+— it decides <em>when to trust its own classification</em> and when to route to a human. That
+second job needs a different family of metrics, and confusing the two families is the classic
+error this harness is built to prevent.</p>
+
+<h3>1. Accuracy (and F1) — did it get the label right</h3>
+<p>Plain top-1: fraction of images whose predicted class equals the true class. F1 is the
+same idea weighted toward the positive class (fake). These are the numbers everyone already
+knows. The harness prints accuracy <em>beside every other number, always</em> — for a reason
+that becomes the punchline below: some attacks leave accuracy untouched, so an accuracy-only
+test would call them harmless.</p>
+
+<h3>2. Two AUROCs — and conflating them is the cheap, embarrassing mistake</h3>
+<p>"AUROC" is not one number here. There are two, measuring two different questions, and a
+table that just says "AUROC" is ambiguous. <code>metrics.py</code> refuses to let them blur:
+they are separate functions with separate names.</p>
+
+<div class="kv">
+<b>AUROC(detection)</b>
+<span>Does <code>p(fake)</code> rank fake images above real ones? This is the classifier's
+core discrimination. 0.5 = coin flip, 1.0 = perfect. <code>auroc_detection(p_fake, y)</code>.</span>
+<b>AUROC(failure)</b>
+<span>Does the model's <em>confidence</em> rank its <em>correct</em> answers above its own
+<em>mistakes</em>? This is the abstention question — can the model tell when it is about to be
+wrong. <code>auroc_failure(conf, correct)</code>.</span>
+</div>
+
+<p>These come apart completely. The whole confidence-attack result (below) is a case where
+AUROC(detection) barely moves while AUROC(failure) is driven to near zero. On the clean CLIP
+probe, measured from the npz: AUROC(detection) = <b>0.9801</b>, AUROC(failure) = <b>0.8898</b>
+— close by coincidence, and there is no reason they should track. A slide that reports one and
+calls it the other is the first thing a reviewer catches.</p>
+
+<div class="box warn"><div class="t">Worked intuition</div>
+A model that is 92% accurate has an AUROC(detection) near 1.0 (it separates fakes from reals
+well). Its AUROC(failure) asks a harder, orthogonal question: of the 8% it got wrong, was it
+at least <em>unsure</em> about them? A well-behaved model is under-confident exactly on its
+errors, so failure-AUROC &gt; 0.5. An attacked model can be <em>confident on its errors</em> —
+failure-AUROC below 0.5, i.e. worse than a coin — which is the dangerous regime, because the
+abstention rule then throws away the correct answers and keeps the wrong ones.</div>
+
+<h3>3. The risk–coverage curve — the shape of selective prediction</h3>
+<p>A selective classifier is allowed to say "I don't know" and abstain. Two quantities trace
+out the trade-off, as a confidence threshold <code>τ</code> sweeps from strict to permissive:</p>
+<div class="kv">
+<b>coverage(τ)</b><span>the fraction of images the model chooses to decide (does not abstain on).</span>
+<b>selective risk R_sel(τ)</b><span>the error rate <em>among the images it decided</em> =
+<code>Σ loss·[g≥τ] / Σ[g≥τ]</code>.</span>
+<b>generalized risk R_gen(τ)</b><span>the same errors divided by the <em>whole</em> set =
+<code>Σ loss·[g≥τ] / n</code>.</span>
+</div>
+<p>A good confidence signal means: as you lower coverage (abstain on more), selective risk
+falls (you kept the easy ones). The identity <code>R_gen = coverage · R_sel</code> holds
+elementwise — I confirmed it on the clean EffB0 curve to within <code>3e-17</code> (floating-
+point zero). That identity is the sanity anchor the whole curve is built on.</p>
+
+<div class="box"><div class="t">A subtlety that produces silent, fake numbers: tie blocks</div>
+Operating points exist <em>only at distinct confidence values</em>. If many images share the
+exact same confidence, a threshold that lands "inside" that block selects a set that depends
+on the sort order — not a property of the model. The trap: fp16/fp32 softmax
+<b>saturates to exactly 1.0</b> for confident rows, manufacturing huge tie blocks silently. A
+naive cumulative AURC then swings by <b>~1.6e-2</b> across 8 permutations of the <em>same</em>
+predictions — an artifact the size of the effects being reported. <code>metrics.py</code>
+computes softmax in <code>float64</code> and collapses tie blocks, so the curve is a property
+of the predictions and not of the sort permutation. <code>n_op</code> (the count of distinct
+operating points) is the tell-tale, and it returns as a guard below.</div>
+
+<h3>4. AURC vs AUGRC — one number for the whole curve, and why there are two</h3>
+<p>To rank models you want a single summary of the risk–coverage curve. AURC is the area
+under it — the (block-weighted) mean of <em>selective</em> risk across operating points. Lower
+is better. But AURC is dominated by its low-coverage tail, where selective risk divides by a
+vanishing denominator and the estimate rests on a handful of samples. AUGRC fixes that: it
+averages <em>generalized</em> risk (divide by <code>n</code>), which cannot blow up as coverage
+goes to zero. Measured on clean EffB0 from the npz:</p>
+
+<table>
+<tr><th>metric</th><th class="num">value (×10⁻³)</th><th>what it is</th></tr>
+<tr><td>AURC</td><td class="num">67.05</td><td>mean selective risk — tail-sensitive</td></tr>
+<tr><td>AUGRC</td><td class="num">46.52</td><td>mean generalized risk — tail-stable</td></tr>
+<tr><td>AURC of the oracle ranker</td><td class="num">15.15</td><td>same n, same errors, perfectly ranked</td></tr>
+<tr><td>E-AURC = AURC − oracle</td><td class="num">51.91</td><td>excess over a perfect ranker</td></tr>
+</table>
+
+<p>For a random confidence signal, AURC ≈ error-rate <code>r</code> while AUGRC ≈ <code>r/2</code>
+— they are not interchangeable and any table must say which it used, and with which weighting
+(this harness uses <b>block-size-weighted mean over distinct operating points</b>; the textbook
+mean-over-k and a trapezoid-over-coverage are different conventions that give different
+numbers). E-AURC subtracts the oracle so a perfect ranker scores exactly 0. One caution the
+code states outright: E-AURC still carries some dependence on the error rate, so it is a
+<em>within-model</em> diagnostic — cross-model claims ride on AUROC(failure), which is
+rate-free by construction.</p>
+
+<h3>5. ECE — is the confidence <em>number</em> honest (and why it is reported with company)</h3>
+<p>Expected Calibration Error asks whether a stated confidence of 0.8 actually means "right
+80% of the time." It bins predictions by confidence and sums the gap between accuracy and
+confidence in each bin. Clean CLIP measures ECE = <b>0.0050</b>. Two honesty caveats the code
+enforces:</p>
+<ul>
+<li><b>Binning inflates it.</b> A <em>perfectly</em> calibrated binary model still measures
+~0.0056 at 5 bins, ~0.0102 at 15, ~0.0573 at 200 — the number depends on a knob. So the bin
+count and domain must be printed with it.</li>
+<li><b>Binary MSP lives in [0.5, 1].</b> Equal-width bins over [0,1] leave 7 of 15 bins empty,
+making the number incomparable to a multi-class ECE. The harness reports both an equal-mass
+variant and a binary-domain variant.</li>
+<li><b>Report NLL and Brier alongside</b> — both are unbiased and binning-free, and unlike
+AURC they <em>move</em> under temperature scaling, which is exactly what makes them the right
+companions to the result in the next section.</li>
+</ul>
+
+<h2>The temperature-invariance result — in full, with the correction</h2>
+
+<p>This is the harness's sharpest theoretical claim, and it was <em>corrected</em> during the
+19–23 Aug audit. Getting the correction right is the point: the clean version of the claim is
+true only on part of the system.</p>
+
+<div class="box"><div class="t">The claim</div>
+Temperature scaling (dividing logits by <code>T</code> before softmax — the standard
+recalibration trick) cannot change binary AURC, AUGRC, or AUROC(failure). <b>Why:</b> for two
+classes, the confidence is <code>MSP = σ(|z₁ − z₀| / T)</code> — the sigmoid of the logit
+margin divided by <code>T</code>. σ is strictly monotone, and dividing the margin by a
+positive constant does not change the <em>order</em> of the samples. Every risk-coverage
+metric depends only on that order. So temperature slides the operating point along a
+<em>fixed</em> curve; it cannot reshape the curve. Calibration therefore cannot rescue a
+confidence-based abstention rule — that is the deployment consequence.</div>
+
+<p><b>Verified, bit-exact, on the linear probes.</b> I re-scored the clean EffB0 probe at five
+temperatures. The margin here is small (max <code>|margin| ≈ 11.9</code>), so nothing
+saturates, and AURC is <em>identical to every decimal place</em>:</p>
+
+<table>
+<tr><th>T</th><th class="num">AURC (×10⁻³)</th><th class="num">n_op (distinct operating points)</th></tr>
+<tr><td>0.5</td><td class="num">67.0544</td><td class="num">15264</td></tr>
+<tr><td>1</td><td class="num">67.0544</td><td class="num">15264</td></tr>
+<tr><td>2</td><td class="num">67.0544</td><td class="num">15264</td></tr>
+<tr><td>5</td><td class="num">67.0544</td><td class="num">15264</td></tr>
+<tr><td>10</td><td class="num">67.0544</td><td class="num">15264</td></tr>
+</table>
+<p>This is asserted as a unit test:
+<code>test_metrics.py::test_temperature_cannot_change_binary_selective_metrics</code>. NLL and
+ECE, meanwhile, <em>do</em> move (ECE drifts 0.008 → 0.032 on this data) — exactly as expected,
+since those are not order-only metrics.</p>
+
+<div class="box bad"><div class="t">The correction: it breaks on the trained checkpoints</div>
+The invariance is only bit-exact when the logits are <em>representable</em>. The trained WP3
+checkpoints are far more confident: under the over-confidence attack, <code>effb0_standard</code>
+reaches max <code>|margin| = 118.6</code>. At those magnitudes <code>σ(|margin|/T)</code>
+returns <em>exactly 1.0</em> for large blocks of samples (float64 σ saturates once
+<code>|margin|/T ≥ 36.74</code>), manufacturing tie blocks — and inside a tie block the order
+is no longer defined, so the "order is preserved" argument no longer bites. Re-scored from the
+npz:
+<table>
+<tr><th>T</th><th class="num">AURC (×10⁻³)</th><th class="num">n_op</th></tr>
+<tr><td>3.338 (fitted)</td><td class="num">194.24</td><td class="num">12668</td></tr>
+<tr><td>1.0</td><td class="num">156.50</td><td class="num">1</td></tr>
+</table>
+At <code>T = 1</code> the confidences have collapsed into a <em>single</em> tie block
+(<code>n_op = 1</code>): every sample has confidence 1.0, there is one operating point, and the
+AURC is a different number entirely. The invariance is real, but only where the margins are
+small enough that no two of them round together.</div>
+
+<div class="box warn"><div class="t"><code>n_op</code> is the guard — read it beside every AURC</div>
+<code>n_op</code> is the count of distinct operating points on the curve. If it is close to
+<code>n</code> (15,316 here), the curve is honest and the temperature-invariance holds. If it
+is far below <code>n</code>, the confidences have saturated into tie blocks and that cell's
+AURC is temperature-dependent and must not be read as a precise value. That is why the D3
+defense tables print <code>n_op</code> in the same row as AURC. On the probes <code>n_op</code>
+sits at 15,264–15,268; on a saturated attacked checkpoint it can be 1. <em>(One honest note:
+the run tables print this checkpoint's fitted-T <code>n_op</code> as 12,674; re-loading the
+stored npz for this page gives 12,668 — a few boundary samples, immaterial to the argument.)</em></div>
+
+<h2>The payoff the metrics were built to expose: two orthogonal failure modes</h2>
+<p>Now the metrics earn their keep. Here are four EffB0 rows, all re-scored from their npz
+files. Watch accuracy and AUROC(failure) move <em>independently</em>:</p>
+
+<table>
+<tr><th>condition</th><th class="num">accuracy</th><th class="num">AUROC(failure)</th><th class="num">AURC ×10⁻³</th></tr>
+<tr><td>clean</td><td class="num">0.8311</td><td class="num">0.7703</td><td class="num">67.1</td></tr>
+<tr><td>ACE (confidence attack, uint8 ε=0.005)</td><td class="num">0.8311</td><td class="num">0.0471</td><td class="num">433.9</td></tr>
+<tr><td>jpeg_q30 (realistic corruption)</td><td class="num">0.7787</td><td class="num">0.7148</td><td class="num">117.2</td></tr>
+<tr><td>downscale_0.5 (realistic corruption)</td><td class="num">0.6762</td><td class="num">0.7013</td><td class="num">182.9</td></tr>
+</table>
+
+<div class="box bad"><div class="t">Read the top two rows together</div>
+The confidence attack leaves accuracy <b>bit-identical</b> (0.8311 → 0.8311) while driving
+AUROC(failure) from 0.7703 to 0.0471 — confidence now ranks the model's mistakes <em>above</em>
+its correct answers. An accuracy monitor sees nothing. The abstention layer, trusting that
+confidence, throws away the good decisions and keeps the bad ones. Contrast the bottom two:
+realistic corruptions destroy <em>accuracy</em> (0.83 → 0.68 under downscaling) while ranking
+survives (AUROC(failure) ≈ 0.70). <b>These are two different diseases with two different
+symptoms</b>, and only a harness that prints accuracy <em>and</em> failure-AUROC <em>and</em>
+AURC in every row can tell them apart. Print accuracy alone and the confidence attack is
+invisible; print AURC alone and you cannot say which disease you are looking at. The full
+threat-model treatment is on <a href="attacks.html">the attacks page</a>.</div>
+
+<h2><code>verify.py</code> — the referee needs its own referee</h2>
+<p>A scoring harness is only as trustworthy as the files it scores. <code>src/verify.py</code>
+is the self-consistency check you run <em>before believing any table</em>. Every defect it
+guards against actually happened in this repo, silently, and was caught by a human rather than
+by code:</p>
+<ul>
+<li>a <code>--limit 512</code> run overwrote the 15,316-row clean baseline with a 512-row file
+— every delta against it became meaningless, and nothing errored;</li>
+<li>a checkpoint sidecar claimed a 12-epoch budget for a run actually cut at epoch 7;</li>
+<li>the clean row was regenerated at batch 16 while the attacked rows were at batch 32 —
+cuDNN is not bit-identical across batch shapes, and it moved accuracy by one sample in 15,316,
+enough to break a headline that reads "accuracy identical across every row";</li>
+<li>a mistyped condition parsed as a <code>realistic</code> row carrying a fabricated ε of 0.</li>
+</ul>
+<p>So <code>verify.py</code> checks that every npz's <code>uid</code> sequence matches the
+manifest split it claims (by hash, not by trusting the filename), that dtypes and shapes hold
+(<code>y</code> is int8, <code>logits</code> is float32[n,2]), that no two comparable rows were
+produced at different batch sizes, that every <code>condition</code> string parses, and that
+no bulk artifacts (<code>.pt</code>, <code>.npz</code>, <code>.parquet</code>) leaked into git.
+It exits non-zero on any failure, so it lives in the pre-flight. Crucially, it guards the
+<em>per-split uid sequence</em>, not the manifest file hash — because manifest v1 and v2 share
+byte-identical calib and test splits and differ only in <code>fit</code>, so a whole-file hash
+would reject exactly the comparison WP3 needs while catching nothing real.</p>
+
+<div class="box good"><div class="t">Why this is the load-bearing artifact</div>
+The models will be re-trained, the attacks re-tuned, the dataset possibly swapped for the
+official test set or for Munition-ID. Through all of it, the <code>(uid, y, logits, condition)</code>
+contract and the twelve functions in <code>metrics.py</code> stay fixed — so numbers produced
+by different people on different days remain comparable, and a self-consistency failure is
+loud instead of silent. That is the "reusable brick" the camp is meant to hand to the TRAIL
+Factory: not a detector, a <em>referee</em>.</div>
+
+<div class="next">→ Next: <a href="dataset.html">The dataset</a> — SID-Set, the
+<code>width==height → fake</code> shortcut that beats every model, and the 19,107 img_id
+collisions in full.</div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

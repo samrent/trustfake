@@ -1,0 +1,191 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Defenses · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html" class="here">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>Defenses — can we train the detector to resist?</h1>
+<p class="lead">Robust training (WP3 / D3). Three arms — plain training, PGD adversarial
+training, and TRADES — built under one matched budget, then scored by the same harness. One
+of the results is a genuine surprise; one of its readings is honestly still a question.</p>
+
+<p>The <a href="attacks.html">attacks page</a> showed two ways to break a frozen detector: destroy
+its <em>accuracy</em> (realistic degradations) or destroy its <em>confidence ranking</em> (the ACE
+family, at bit-identical accuracy). This page asks the natural next question — <strong>does
+adversarial training help?</strong> — and answers it with a controlled 3&times;6 table where every
+number below has been recomputed from the stored predictions with <code>src/metrics.py</code> (pure
+numpy, no GPU) and matches the run reports to the decimal.</p>
+
+<div class="box"><div class="t">The experimental discipline (why the comparison is fair)</div>
+All three arms start from <strong>one shared initialisation</strong>
+(<code>phase1_init.pt</code>, 7 clean epochs, fit-val clean 0.8697), run the <strong>same
+12-epoch schedule</strong> on the <strong>same fit split, augmentation and batch order</strong>, and
+are scored by the <strong>unchanged WP1 harness on splits the training never saw</strong>. Model
+selection touches only a held-out slice of <em>fit</em> — never calib, never test. So a difference
+between two rows is a difference of <em>method</em>, not of data or budget.
+<span class="pill">src/train.py</span><span class="pill">runs/train_wp3_matched.log</span>
+</div>
+
+<h2>Why the budget is matched on optimizer steps, not wall clock</h2>
+<p>PGD adversarial training runs an inner attack loop (here 7 steps) on every batch before it takes
+a single weight update. So one PGD optimizer step costs <strong>k+1 = 8 forward/backward passes</strong>
+where plain training costs one. If you instead matched the three arms on <em>wall-clock time</em>,
+the plain arm would quietly take roughly 8&times; as many weight updates — and the table would be
+measuring who got more training, not which method is better. Matching optimizer steps (12 epochs
+each) removes that confound; the wall clock is reported alongside so the real cost stays visible
+rather than hidden.</p>
+
+<table>
+<tr><th>arm</th><th class="num">optimizer steps</th><th class="num">wall clock, 12 ep</th><th>inner attack</th></tr>
+<tr><td>standard</td><td class="num">5&nbsp;676 planned</td><td class="num">8.8 min</td><td>none</td></tr>
+<tr><td>PGD-AT</td><td class="num">5&nbsp;676 planned</td><td class="num">27.3 min</td><td>7-step PGD</td></tr>
+<tr><td>TRADES</td><td class="num">5&nbsp;676 planned</td><td class="num">30.9 min</td><td>7-step PGD-KL</td></tr>
+</table>
+<p>Same steps, ~3&times; the wall clock — the price of robustness is paid in compute, and it is
+recorded (<code>runs/train_wp3_matched.log</code>), not swept under the rug.</p>
+
+<h2>The forensic-epsilon finding — 8/255 collapses the model</h2>
+<p>This is the result to put in front of two robustness researchers, because it contradicts a habit
+the whole field carries over from object recognition.</p>
+
+<p>The first PGD-AT run used the <strong>standard ImageNet robustness budget, &epsilon; = 8/255</strong>.
+It did not just train worse — it <strong>collapsed to a constant output</strong>. The training loss
+decayed toward <code>ln 2 = 0.6931</code> (uniform two-class output: 0.7102 by epoch 6, from 0.7647),
+and both clean and robust fit-val accuracy pinned at <strong>0.4943</strong>, the majority-class rate.
+The run was killed at epoch 6. At a forensic budget the exact same code trains fine.</p>
+
+<table>
+<tr><th>PGD-AT budget</th><th class="num">fit-val clean</th><th class="num">fit-val robust (PGD-10)</th><th>outcome</th></tr>
+<tr><td>&epsilon; = 8/255 (ImageNet default)</td><td class="num">0.4943</td><td class="num">0.4943</td><td>collapsed — constant</td></tr>
+<tr><td>&epsilon; = 2/255, warm-up</td><td class="num">0.8251</td><td class="num">0.7359</td><td>trains</td></tr>
+</table>
+
+<div class="box bad"><div class="t">The mechanism — the ball is wider than the evidence</div>
+Deepfake evidence is <strong>small-amplitude, high-frequency residue</strong>: generator
+fingerprints, resampling traces, blending seams. An 8/255 L&infin; ball (&plusmn;8 grey levels on
+every pixel) is <strong>wide enough to erase that residue outright</strong>. Once it can, the
+robust-optimal classifier <em>inside that ball</em> genuinely is a constant — training is doing
+exactly what the objective asks, and the objective is wrong for this task. Robustness budgets
+transplanted from object recognition, where the signal is large-amplitude semantic structure, do
+not transfer to forensics. So the defenses train at forensic budgets (1&ndash;4/255) with a linear
+&epsilon; warm-up, and the collapse stays in the report as the finding it is.
+<span class="pill">src/train.py docstring</span><span class="pill">runs/train_wp3_eps8_255_collapsed.log</span>
+</div>
+
+<h2>The full D3 comparative table</h2>
+<p>Three models &times; six conditions. Each cell is <strong>accuracy | AUROC(failure) | AURC
+&times;10&#8315;&sup3;</strong>. Higher accuracy and AUROC(failure) are better; lower AURC is
+better. Each model's temperature is fitted on <em>its own</em> clean calibration split and frozen
+before any attacked row is scored (standard <strong>3.338</strong>, PGD-AT 0.903, TRADES 0.757 — the
+undefended model needs heavy smoothing, the defended ones are nearly calibrated already). All values
+below were re-derived from the stored <code>.npz</code> predictions and reproduce
+<code>runs/d3_comparative.md</code> exactly.</p>
+
+<table>
+<tr><th>condition</th><th>standard</th><th>PGD-AT (2/255)</th><th>TRADES (2/255)</th></tr>
+<tr><td>clean</td><td class="num">0.8435 / 0.7945 / 52.5</td><td class="num">0.8177 / 0.8006 / 62.3</td><td class="num">0.7877 / 0.7761 / 82.5</td></tr>
+<tr><td>realistic: JPEG q50</td><td class="num">0.7198 / 0.7188 / 140.4</td><td class="num">0.8169 / 0.7997 / 62.8</td><td class="num">0.7876 / 0.7730 / 83.4</td></tr>
+<tr><td>realistic: 0.5&times; resize</td><td class="num">0.7987 / 0.7793 / 75.7</td><td class="num">0.7857 / 0.7853 / 80.6</td><td class="num">0.7649 / 0.7586 / 100.9</td></tr>
+<tr><td>adv: PGD 2/255 (label)</td><td class="num"><strong>0.0000</strong> / nan / 1000.0</td><td class="num">0.7192 / 0.7054 / 146.8</td><td class="num">0.7062 / 0.6799 / 170.3</td></tr>
+<tr><td>adv: ACE uint8 (confidence)</td><td class="num">0.8435 / <strong>0.1093</strong> / 329.5</td><td class="num">0.8177 / 0.6659 / 94.5</td><td class="num">0.7877 / 0.6541 / 117.9</td></tr>
+<tr><td>adv: over-confidence (label-free)</td><td class="num">0.8435 / 0.4135 / 194.2</td><td class="num">0.8177 / 0.7770 / 68.8</td><td class="num">0.7877 / <strong>0.7789</strong> / 81.3</td></tr>
+</table>
+
+<div class="box warn"><div class="t">Read every accuracy against the shortcut, not against zero</div>
+On this same split the no-model rule <code>width==height &rarr; fake</code> scores
+<strong>0.9785</strong> accuracy (<a href="dataset.html">the dataset page</a> explains why). Every
+model accuracy in the table — 0.79 to 0.84 — sits <em>below</em> that trivial baseline. Robust
+training is being compared on the harder axes (ranking and adversarial survival), and the clean-accuracy
+column should be read knowing the split is riddled with a geometry shortcut.
+<span class="pill">runs/trivial_baselines.json</span>
+</div>
+
+<h2>Three readings — and the third is a question, not a conclusion</h2>
+
+<div class="box good"><div class="t">Reading 1 — robust training works on the label axis</div>
+The PGD 2/255 attack (an <em>accuracy</em> attack — it flips predictions) takes the undefended model
+to <strong>0.0000</strong> accuracy. The AUROC(failure) is <code>nan</code> there because there are
+no correct predictions left to rank — that is the harness's empty-case guard firing, not a bug. Both
+defended models hold <strong>~0.71</strong> accuracy under the same attack. On the threat it was
+designed for, adversarial training does exactly what it promises.
+</div>
+
+<div class="box warn"><div class="t">Reading 2 — it costs clean accuracy, and that cost is real</div>
+Clean accuracy drops <strong>&minus;2.6 pp</strong> for PGD-AT (0.8435 &rarr; 0.8177) and
+<strong>&minus;5.6 pp</strong> for TRADES (0.8435 &rarr; 0.7877), and the undefended model keeps the
+best clean AURC of the three (<strong>52.5</strong> vs 62.3 / 82.5). Robustness is not free; the
+trade-off belongs in the same sentence as the benefit. (As a bonus, some realistic robustness comes
+along anyway: JPEG q50 costs the standard model 12 pp of accuracy and costs PGD-AT essentially
+nothing, 0.8177 &rarr; 0.8169.)
+</div>
+
+<div class="box"><div class="t">Reading 3 — it ALSO protects confidence, which we did not expect</div>
+Against the <a href="attacks.html">ACE confidence attack</a> — which leaves accuracy identical and
+attacks only the ranking — the undefended model's AUROC(failure) collapses to <strong>0.1093</strong>
+(a working confidence signal turned actively misleading), while the defended models <strong>hold at
+0.6659 / 0.6541</strong>. Against the label-free over-confidence attack the defended models barely
+move (0.8006 &rarr; 0.7770; 0.7761 &rarr; 0.7789). The published hypothesis we set out to test (Ledda
+et&nbsp;al. — that adversarial training protects against under-confidence attacks but <em>not</em>
+over-confidence ones) <strong>does not reproduce in this setting</strong>.
+</div>
+
+<div class="box warn"><div class="t">…but reading 3 rests on one under-optimised epsilon — treat it as a question for the PIs</div>
+Three things keep this a question rather than a refutation, and they should be stated to the
+robustness PIs plainly:
+<ul>
+<li><strong>The attack did not saturate its own budget on the defended arm.</strong> The
+over-confidence attack reached only <strong>~64% of its L&infin; budget</strong> (effective mean
+2.565 of 4.0 grey levels) on the PGD-AT model while still touching every pixel
+(<code>frac_perturbed = 1.0</code>). An attack that moves every pixel but falls short of the ball is
+the <strong>textbook signature of vanishing-gradient masking</strong> — i.e. the defended model may
+merely be <em>hiding</em> its gradients from this particular attack, not truly resisting it.</li>
+<li><strong>The internal control cuts the other way.</strong> A 4&times;-larger budget (over-confidence
+at 4 grey levels) produces a <em>smaller</em> effect than ACE at ~1 grey level — a larger hammer
+doing less damage is what an under-optimised attack looks like.</li>
+<li><strong>Half the 2&times;2 is missing.</strong> The Ledda hypothesis is a differential (under- vs
+over-confidence). The <strong>under-confidence arm was never run</strong> — the code exists
+(<code>src/attack_suite.py</code>) but no such predictions were produced. Claiming a differential is
+contradicted with one of its two arms absent is the highest-risk sentence in the whole write-up.</li>
+</ul>
+So the honest framing is: <em>"AT and TRADES resist this over-confidence attack, but the attack is a
+fixed 20-step single-restart descent whose effective &epsilon; on PGD-AT is only 64% of budget, and we
+never ran the under-confidence arm — so we treat this as a question, not a result."</em>
+<span class="pill">runs/CLAIM_AUDIT_2026-08-19.md</span><span class="pill">src/attack_suite.py</span>
+</div>
+
+<h2>What this buys the actual system</h2>
+<p>The point of D3 is not the table — it is what the table does to a moderation pipeline. Carried
+through the selective-moderation policy (fitted per model at a 5% residual-risk SLA, then frozen),
+adversarial training takes residual risk under a label attack from <strong>100% down to ~13%</strong>
+and under the ACE confidence attack from ~19% down to ~8% — at the price of the human-review bill
+roughly <strong>doubling, 27% &rarr; 50%</strong>. That is a staffing cost, not an accuracy cost, and
+it is the subject of the next page.</p>
+
+<div class="box"><div class="t">One-line summary</div>
+Robust training at a <em>forensic</em> budget works — on the label axis it is decisive, and it
+unexpectedly protects confidence too — but the confidence result rests on one under-optimised attack
+with its complementary arm unrun, so it is written up as an open question. And 8/255, the field's
+default, silently destroys the model.
+</div>
+
+<div class="next">&rarr; Next: <a href="moderation.html">Moderation</a> — turning these
+three models into an allow / review / flag policy, and what it costs.</div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

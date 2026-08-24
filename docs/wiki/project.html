@@ -1,0 +1,135 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The project · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html" class="here">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>The project</h1>
+<p class="lead">What TrustFake is, the camp it belongs to, which pieces you own, and how the
+deck's one-line thesis turned into measured numbers.</p>
+
+<div class="box"><div class="t">TrustFake in one paragraph</div>
+TrustFake is a two-week research build on <b>trustworthy AI for social-media image deepfake
+detection</b>. The task is deliberately narrow: <b>binary real-vs-fake</b> classification over
+the SID-Set dataset (real / fully-synthetic / tampered images, folded to real vs fake). The
+frame is not "can we detect fakes" but "can a detector stay trustworthy inside a <b>content
+moderation pipeline</b>" — a pipeline that does not just read the predicted label, it reads the
+model's <i>confidence</i> to decide whether an image is auto-allowed, auto-flagged, or escalated
+to a human. The deck's own words: an attacker who can inflate a model's confidence can make a
+malicious image "bypass scrutiny and be automatically accepted," turning "a risk-aware system
+into an over-trusting one." That sentence is the whole project.</div>
+
+<h2>The camp</h2>
+<p>TrustFake is Project 02 at <b>TReC 2026</b> — a two-week team-building research camp run under
+the TRAIL programme. You are not building this alone or over months; you are building it against
+a clock, in a subgroup, in front of two PIs whose own research is adversarial robustness and
+trustworthy vision.</p>
+
+<div class="kv">
+<b>Camp</b><span>TReC 2026 · Lausanne</span>
+<b>Window</b><span>24 Aug – 4 Sep 2026 (two weeks + a pre-camp scaffold phase)</span>
+<b>Final event</b><span>4 Sep — the presentation / demonstrator talk</span>
+<b>Project</b><span>02 · TrustFake: Trustworthy AI for Social Media Image Deepfake Detection</span>
+<b>Domain / theme</b><span>Media, Culture &amp; Digital Humanities · Trustworthy AI</span>
+<b>PI — Nicolas Sournac</b><span>Fundamental AI &amp; Optimization; robustness, reliability, safety of deep nets</span>
+<b>PI — Ahmed Baha Ben Jmaa</b><span>Computer Vision; robust and reliable vision systems</span>
+<b>Source deck</b><span>TReC_Sournac.pdf (the 8-page proposal); brief TrustFake-Brief_2026-07-20.pdf</span>
+</div>
+
+<p>The proposal splits the work into four scientific challenges (C1–C4), each mapped to one
+objective, one work package (WP1–WP4), and one deliverable (D1–D4). Four subgroups run these
+<b>in parallel</b> once the WP1 interfaces exist; the last day is reserved for integration and
+the talk, not new code.</p>
+
+<table>
+<tr><th>WP</th><th>Deliverable</th><th>What it builds</th><th>Held by</th></tr>
+<tr><td>WP1</td><td>D1 — baseline framework</td><td>Data pipeline, task definition, and the <b>evaluation</b> pipeline (accuracy, AUROC, risk-coverage, AURC/AUGRC)</td><td><span class="pill">you</span></td></tr>
+<tr><td>WP2</td><td>D2 — attack package</td><td>Prediction-targeted <i>and</i> confidence-targeted attacks + vulnerability assessment</td><td>attacks subgroup</td></tr>
+<tr><td>WP3</td><td>D3 — defense package</td><td>Robust adversarial training (PGD-AT, TRADES) + comparative results</td><td>robust-training subgroup</td></tr>
+<tr><td>WP4</td><td>D4 — moderation prototype</td><td>Uncertainty-aware selective-moderation layer + end-to-end demonstrator</td><td><span class="pill">you</span></td></tr>
+</table>
+
+<h2>What you hold, and what you deliberately do not build</h2>
+<p>You own the two <b>ends</b> of the pipeline: <b>WP1</b> (the evaluation harness) and <b>WP4</b>
+(the moderation layer). The two subgroups in the middle produce models — WP2 attacks them, WP3
+hardens them. Your code never touches theirs; it consumes arrays. That separation is the point,
+and it is worth being explicit about one piece you are careful <i>not</i> to build.</p>
+
+<div class="box warn"><div class="t">The uncertainty heads are the PIs' own research — score them, do not build them</div>
+The proposal's background section leans on the PIs' home turf: uncertainty estimation methods
+"beyond standard softmax scores" — Monte-Carlo Dropout and deep ensembles (refs [13,14] in the
+deck). Those heads are Sournac and Ben Jmaa's research area. If your subgroup tried to <i>build</i>
+a better uncertainty head, you would be competing on the PIs' ground, entangled in their
+publication, and staking your two weeks on a modelling result you cannot guarantee. Instead the
+harness takes only <code>(scores, labels)</code> — it is agnostic to <i>where</i> the confidence
+came from (a plain max-softmax probability, a dropout ensemble, a trained head). So you can
+<b>score any head anyone produces</b>, including the PIs' own, without owning the risk of building
+one. The referee is not a player. Owning the scorer means every other subgroup's work — and the
+PIs' — is measured through your instrument, and your deliverable cannot be scooped by a modelling
+choice that does not land in time. See <a href="harness.html">the harness page</a> for the
+<code>npz</code> contract that makes this a data adapter, not a rebuild.</div>
+
+<h2>The deck's thesis, and how each clause now has a number</h2>
+<p>Figure 1 of the proposal carries the whole project as one line: <b>"From data to trustworthy
+decisions: detect, stress-test, harden, and act."</b> Four verbs, one per work package. Before
+the camp those were promises. After the pre-camp build (19 Aug, re-audited 19–23 Aug) each has a
+measured number attached. The numbers themselves live on their own pages — here is only the
+shape, so you can see that every clause turned into evidence rather than a slogan.</p>
+
+<table>
+<tr><th>Clause</th><th>WP</th><th>What it now means, with a number</th><th>File</th></tr>
+<tr><td><b>Detect</b></td><td>WP1</td><td>A real baseline exists: frozen CLIP probe reaches clean accuracy <b>0.9289</b>, AURC <b>11.83×10⁻³</b>, and the risk-coverage curve is <i>not</i> degenerate. But the number only means something read against the dataset's trivial shortcut (<b>0.9785</b> with no model at all).</td><td class="num">README Results;<br>trivial_baselines.json</td></tr>
+<tr><td><b>Stress-test</b></td><td>WP2</td><td>The confidence-vs-accuracy split is real and measurable. The ACE attack holds accuracy at <b>0.8311</b> to four decimals while driving failure-ranking AUROC from <b>0.7703 → 0.0002</b>: confidence now ranks mistakes <i>above</i> correct answers. Realistic perturbations do the opposite — wreck accuracy, spare ranking.</td><td class="num">condition_table_ace.md</td></tr>
+<tr><td><b>Harden</b></td><td>WP3</td><td>Robust training works, and shows one result the deck did not predict. Under PGD 2/255 the standard model collapses to accuracy <b>0.0000</b>; PGD-AT holds <b>0.7192</b>. And adversarial training also <i>protects confidence</i> — failure-ranking AUROC under the confidence attack holds at <b>0.666</b> vs <b>0.109</b> undefended.</td><td class="num">d3_comparative.md</td></tr>
+<tr><td><b>Act</b></td><td>WP4</td><td>A moderation policy tuned to a 5% residual-risk SLA ships <b>98%</b> wrong auto-decisions under a tensor-access confidence attack, and <b>33.06%</b> under the realisable file-only version — at bit-identical accuracy, so no accuracy monitor fires. Hardening pulls the PGD case from <b>100% → ~13%</b>, at the price of the review bill roughly doubling (27% → 50%).</td><td class="num">moderation_threatmodel.md;<br>d4_*.json</td></tr>
+</table>
+
+<div class="box good"><div class="t">The one sentence to keep</div>
+Read down the "Act" row: a one-grey-level perturbation, invisible to a human and survivable in a
+saved PNG, takes a policy tuned to a 5% error budget to a third of its auto-decisions being wrong
+— <b>with accuracy unchanged to four decimals</b>. That is the thesis proven in a single row, and
+it is why the project measures confidence, not just correctness. The full walk-through is on
+<a href="moderation.html">the moderation page</a>.</div>
+
+<h2>The TRAIL Factory brick</h2>
+<p>The proposal's Section 8 asks whether TrustFake yields a "reusable TRAIL Factory brick" — a
+component that outlives the two-week camp and can be dropped into later applied-AI work. The deck
+answers yes, and names the candidate: "a reusable evaluation and decision-support brick for
+trustworthy multimedia AI, helping organizations test whether visual AI systems remain reliable
+under realistic perturbations and adversarial manipulation."</p>
+
+<p>That brick is <b>WP1 + WP4</b> — the two pieces you hold. The harness is written to be exactly
+that: it scores <code>(scores, labels)</code> and nothing else, so — in the README's own phrasing
+— "a second dataset is a data adapter, not a rebuild." Swap deepfakes for any binary
+visual-trust decision and the same scorer, the same risk-coverage machinery, the same moderation
+policy apply unchanged. The camp is the first customer of a general instrument, not a one-off
+deliverable. Whether that framing survives contact with the PIs, and what a demonstrable brick
+needs by 4 Sep, is <a href="pathways.html">the pathways page</a>.</p>
+
+<div class="box"><div class="t">Multidisciplinarity, stated plainly</div>
+TReC wants STEM crossed with social-sciences-and-humanities. TrustFake qualifies on its face:
+computer vision, adversarial ML and uncertainty on the STEM side; media reliability,
+misinformation, and the governance of AI-assisted moderation on the SSH side. The harness is the
+bridge — it turns a governance question ("should this be auto-decided?") into a measurable
+quantity ("residual risk at this coverage").</div>
+
+<div class="next">→ Next: <a href="harness.html">The harness</a></div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

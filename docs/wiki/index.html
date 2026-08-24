@@ -1,0 +1,137 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overview · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html" class="here">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>TrustFake — what was built, and what it means</h1>
+<p class="lead">A deepfake-detection moderation pipeline, stress-tested until it broke, so we
+know exactly how it breaks before anyone else finds out.</p>
+
+<p>TrustFake is the TReC 2026 project on <b>social-media image deepfake detection</b>. The
+concrete task is deliberately small: given one image, decide <b>real vs fake</b> — where
+"fake" folds together fully-synthetic images and locally-tampered ones — so that a moderation
+pipeline can <b>auto-allow</b> the images it is confident are real, <b>auto-remove</b> the ones
+it is confident are fake, and send the uncertain middle to a human reviewer. Everything on this
+wiki is about one question a distributed-systems engineer already knows to ask of any automated
+decision system: <b>when it is wrong, does it know?</b> The answer here is unsettling, and it is
+the reason the whole project exists.</p>
+
+<div class="box"><div class="t">The one thesis, in one line: confidence can be hacked.</div>
+A detector produces two things — an <b>answer</b> (real / fake) and a <b>confidence</b> (how sure
+it is). The pipeline trusts the confidence to decide what to automate. We show these two are
+<b>separable</b>: an attacker can leave every answer untouched — accuracy identical to four
+decimals — while making the confidence <b>systematically wrong</b>, so the model is most sure
+precisely where it is mistaken. A system that abstains on its least-confident traffic then keeps
+the <i>worst</i> half and reviews the good half. Confidence is not a free by-product of accuracy;
+it is a second attack surface, and nothing in a standard accuracy benchmark would ever reveal it.
+</div>
+
+<h2>The headline result, stated plainly</h2>
+
+<p>Take the fine-tuned EfficientNet-B0 detector and the moderation policy tuned to keep automated
+errors under a 5% SLA on clean traffic. Now perturb each uploaded image by <b>about one 8-bit
+grey level</b> — the smallest change a JPEG or PNG file can even represent, invisible to a human,
+and a change that <b>does not move accuracy at all</b>. The policy does not fall back to caution.
+It gets <i>more</i> confident, automates <i>more</i> of the traffic, and is wrong on a third of it.</p>
+
+<table>
+<thead><tr><th>Moderation policy, EfficientNet-B0 (5% SLA)</th>
+<th class="num">accuracy</th><th class="num">auto-decided</th><th class="num">wrong among auto-decided</th></tr></thead>
+<tbody>
+<tr><td>clean images</td><td class="num">0.8311</td><td class="num">43.2%</td><td class="num">4.65%</td></tr>
+<tr><td>+ ~1 grey level (file-realisable attack)</td><td class="num">0.8311</td><td class="num">50.4%</td><td class="num"><b>33.06%</b></td></tr>
+</tbody></table>
+
+<div class="box bad"><div class="t">Read the two right-hand columns together.</div>
+Accuracy is <b>bit-identical</b> (0.8311 → 0.8311). Yet the residual risk — the error rate among
+the decisions the system made <b>on its own, without a human</b> — goes from under 5% to
+<b>33.06%</b>, and it does so while automating <i>more</i> traffic (43.2% → 50.4% coverage). Roughly
+one in three automated decisions is now wrong, and the accuracy dashboard shows nothing. Source:
+<code>runs/moderation_threatmodel.md</code>. The mechanism, its two threat models (tensor-access vs
+file-only), and why the file-only version at 0.0005 harmlessly vanishes are on
+<a href="attacks.html">the attacks page</a>.</div>
+
+<div class="box"><div class="t">The same number, from the other side.</div>
+On the detector itself, the attack drives <b>failure-prediction AUROC</b> — how well confidence
+sorts mistakes from correct answers — from <b>0.7703 to 0.0002</b>. 0.5 would be a coin flip;
+below 0.5 means confidence now ranks the model's <i>errors above</i> its correct answers, almost
+perfectly inverted. Verified from <code>runs/predictions/predictions_tf_efficientnet_b0_test_*.npz</code>
+via <code>src/metrics.py</code>. This is a pure ranking failure: no image was misclassified that
+was not already misclassified — the attacker only rearranged the confidence order.</div>
+
+<div class="box good"><div class="t">The honest counterweight — accuracy is defence-in-depth.</div>
+The <b>stronger</b> CLIP detector (clean accuracy 0.9289) suffers the same confidence collapse —
+failure-AUROC 0.8779 → 0.1812 — yet its moderation residual risk only moves <b>5.46% → 7.46%</b>
+under the identical file-realisable attack. A low base error rate <i>bounds</i> the damage: the
+attacker can only reshuffle confidence around the few mistakes that exist. Accuracy you thought was
+about being right turns out to also be about being <i>safe when your confidence is attacked</i>.
+Source: <code>runs/moderation_clip.md</code>. Details on <a href="moderation.html">the moderation
+page</a>.</div>
+
+<h2>The project at a glance</h2>
+<div class="kv">
+<b>Task</b><span>Binary real-vs-fake image detection on SID-Set (real / fully-synthetic / tampered, folded to real vs fake), for a content-moderation pipeline.</span>
+<b>Camp</b><span>TReC 2026, 24 Aug – 4 Sep, Lausanne. Final talk 4 Sep.</span>
+<b>PIs</b><span>Sournac, Ben Jmaa — trustworthy AI, robustness.</span>
+<b>Detectors measured</b><span>CLIP ViT-L/14 frozen probe (clean acc 0.9289), EfficientNet-B0 + linear head (clean acc 0.8311), three fine-tuned EffNet arms (standard / PGD-AT / TRADES).</span>
+<b>Evaluation slice</b><span>SID-Set validation split, n ≈ 15,316 (the official test split is withheld — see <a href="dataset.html">the dataset page</a>).</span>
+</div>
+
+<h2>How to read this wiki</h2>
+<p>Each page stands alone in 5–8 minutes and carries its own numbers with the file they came from.
+In nav order, top to bottom:</p>
+<table>
+<thead><tr><th>Page</th><th>What it explains</th></tr></thead>
+<tbody>
+<tr><td><a href="project.html">The project</a></td><td>Why a moderation pipeline needs <i>selective</i> detection, the four deliverables (D1–D4), and who wants what by 4 Sep.</td></tr>
+<tr><td><a href="harness.html">The harness</a></td><td>The evaluation engine (D1): the <code>.npz</code> contract that lets attacked or robust models be scored without touching their code, and what AURC / failure-AUROC actually measure.</td></tr>
+<tr><td><a href="dataset.html">The dataset</a></td><td>SID-Set, and the shortcut that should scare you: a one-line rule <code>width==height → fake</code> scores 0.9785 with no model at all. Read every accuracy against that, not against 0.5.</td></tr>
+<tr><td><a href="attacks.html">Attacks</a></td><td>The confidence attack (ACE) vs realistic corruption (JPEG, downscale): two orthogonal ways to break a detector — one destroys ranking at fixed accuracy, the other destroys accuracy while ranking survives.</td></tr>
+<tr><td><a href="defenses.html">Defenses</a></td><td>Adversarial training (D3): what a matched-budget PGD-AT / TRADES comparison actually bought, where 8/255 collapses the model entirely, and the surprising claim that robust training also protects confidence.</td></tr>
+<tr><td><a href="moderation.html">Moderation</a></td><td>The end-to-end pipeline (D4): the SLA is a <i>choice</i> not a fact, the auto/review/auto split, and the price of safety measured in reviewer workload (27% → 50%).</td></tr>
+<tr><td><a href="epistemics.html">How experiments lie</a></td><td>The methodological spine: why accuracy printed <i>beside</i> AURC is the falsifiability check, why fp16 confidence saturation silently manufactures fake results, and the temperature-invariance subtlety that was corrected mid-project.</td></tr>
+<tr><td><a href="pathways.html">To 4 Sep</a></td><td>State of the deliverable and the settling experiments — the open questions to close, or to hand to the PIs, before the final talk.</td></tr>
+<tr><td><a href="glossary.html">Glossary</a></td><td>Every term (AURC, MSP, coverage, residual risk, ACE, PGD, TRADES, SLA) in one place, defined for a systems engineer with no ML background.</td></tr>
+</tbody></table>
+
+<h2>State of the deliverable</h2>
+
+<div class="box good"><div class="t">Built and measured (D1–D4, plus demo)</div>
+<div class="kv" style="margin-top:6px">
+<b>D1 — evaluation harness</b><span>Data-agnostic scoring: risk-coverage, AURC/AUGRC, failure-AUROC, calibration. Numbers on this page reproduce from the shipped <code>.npz</code> files with <code>src/metrics.py</code>.</span>
+<b>D2 — attacks</b><span>Confidence attack (ACE, tensor and file-realisable variants) and realistic corruptions, run on EffNet-B0 and CLIP; condition tables in <code>runs/condition_table_*.md</code>.</span>
+<b>D3 — defenses</b><span>Standard / PGD-AT / TRADES, one shared init, matched 12-epoch budget; full comparison in <code>runs/d3_comparative.md</code>.</span>
+<b>D4 — moderation</b><span>Selective pipeline at a 5% SLA, frozen policy, scored clean and under attack for all three models plus CLIP; <code>runs/d4_*.json</code>, <code>runs/moderation_*.md</code>.</span>
+<b>Demo</b><span>Risk–coverage and confidence-histogram figures built (<code>runs/fig1_risk_coverage.png</code>, <code>runs/fig2_confidence_hist.png</code>).</span>
+</div></div>
+
+<div class="box warn"><div class="t">Open — questions, not failures</div>
+<div class="kv" style="margin-top:6px">
+<b>ResNet parity</b><span>The confidence attack is measured on EfficientNet-B0 and CLIP. A second convolutional architecture (ResNet) has not been run, so architecture-generality of the effect is unconfirmed rather than established.</span>
+<b>The temperature bound, corrected</b><span>Temperature scaling provably cannot reorder samples on the <i>linear probes</i> (max margin ≈ 12, AURC bit-identical for T ≥ 0.5). On the <i>trained checkpoints</i> (max margin ≈ 118) float64 softmax saturates to exactly 1.0 and collides neighbouring margins into tie blocks, so ordering is <b>not</b> T-invariant there — the guard is the operating-point count. This corrected claim is dissected on <a href="epistemics.html">the epistemics page</a>.</span>
+<b>The uncertainty (σ) seam</b><span>The PIs' decision diagram routes on a per-image uncertainty score σ — from MC-Dropout, ensembles or evidential heads that <i>other</i> subgroups build. The current npz contract carries logits only: there is no σ slot. Adding one and publishing it on Day 1 makes this harness the camp's integration point. Detailed on <a href="pathways.html">the pathways page</a>.</span>
+<b>The confidence-defense question</b><span>"Robust training also protects confidence" rests on <i>one</i> under-optimised epsilon (effective ε only ~64% of budget on PGD-AT — possible gradient masking) and the under-confidence attack arm was never run. It is a question to put to the PIs, not a settled result.</span>
+</div>
+Also open from the audit: whether the detector rides the laundered compression shortcut (the geometry control proves it can't read aspect ratio, not that it ignores the resampling residue) — the settling experiment is named. See <a href="dataset.html">the dataset page</a>.</div>
+
+<div class="next">→ Next: <a href="project.html">The project</a> — why selective detection, the four deliverables, and the 4 Sep audience.</div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

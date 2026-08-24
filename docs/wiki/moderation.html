@@ -1,0 +1,261 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moderation · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html" class="here">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>Moderation — the layer where everything joins</h1>
+<p class="lead">A detector outputs a number. A moderation system has to turn that number into an
+action, on a schedule, at a cost. WP4 is that layer, and it is where the abstract findings of
+the <a href="attacks.html">attacks</a> and <a href="defenses.html">defenses</a> pages become
+operational: <b>how many deepfakes ship, how many real users get flagged, how many moderators
+you have to pay.</b></p>
+
+<p>Think of it as an admission controller in front of a queue. Every image gets one of three
+verdicts. Two of them are automatic; the third is a request for a human.</p>
+
+<div class="kv">
+<b>ALLOW</b><span>auto-accept as real — no human sees it</span>
+<b>REVIEW</b><span>escalate to a human moderator — the expensive path</span>
+<b>FLAG</b><span>auto-flag as fake — no human sees it</span>
+</div>
+
+<p>The code (<code>src/moderation.py</code>) is deliberately small. The whole policy is two
+thresholds on <code>p(fake)</code>, the model's estimated probability that the image is fake:</p>
+
+<pre><code>p_fake &lt;  t_low            -&gt; ALLOW
+p_fake &gt;  t_high           -&gt; FLAG
+t_low &lt;= p_fake &lt;= t_high  -&gt; REVIEW   (the uncertainty band)</code></pre>
+
+<h2>Why two thresholds, and why on the risk axis</h2>
+
+<p>A distributed-systems instinct is to threshold on <i>confidence</i> — one knob, escalate
+anything below it. That is exactly the symmetric special case <code>t_low = 1 − tau</code>,
+<code>t_high = tau</code>, so nothing is lost by generalising. But moderation costs are not
+symmetric. Auto-allowing a deepfake <b>ships harm</b>. Auto-flagging a real photo <b>annoys a
+user</b>. Sending either to review <b>costs a moderator's minute</b>. Three different prices —
+two thresholds let you set them independently; one confidence knob silently asserts they are
+equal.</p>
+
+<div class="box"><div class="t">The one rule that makes the numbers honest</div>
+The thresholds are fitted <b>once, on the clean calibration split, and then frozen</b>. They are
+applied unchanged to the clean test set and to every attacked condition. Re-fitting on attacked
+data would be an <i>oracle</i> policy — it assumes the moderator already knows an attack is
+underway, which is the exact assumption the attack defeats. Freezing is what lets the tables
+below show a real collapse instead of a laundered one.</div>
+
+<p>Four deployment indicators carry the story. Two are the obvious cost/coverage pair; two more
+split the errors by who they hurt.</p>
+
+<div class="kv">
+<b>coverage</b><span>fraction auto-decided (1 − review rate) — the automation you actually got</span>
+<b>residual_risk</b><span>error rate <i>among the auto-decided</i> — what actually ships wrong</span>
+<b>missed_fake_rate</b><span>fakes auto-ALLOWED, as a fraction of all fakes — the harm</span>
+<b>false_flag_rate</b><span>reals auto-FLAGGED, as a fraction of all reals — the annoyance</span>
+</div>
+
+<p>One design detail worth stealing: if a condition auto-decides almost nothing, its residual
+risk is reported as <b>NaN, not 0.0</b>. A system that refuses to decide anything has no residual
+risk to measure, and printing 0.0 would make total refusal to work look like perfect safety — the
+single most flattering misreading of a collapsed system. The SLA fitter enforces the same honesty:
+if no threshold pair meets the target, the policy degrades to <b>review-everything</b> rather than
+quietly returning the least-bad infeasible pair.</p>
+
+<h2>The headline: the realisable attack at unchanged accuracy</h2>
+
+<p>The <a href="attacks.html">attacks page</a> establishes that the file-realisable confidence
+attack (<code>ace_uint8</code>, a perturbation that survives being written back to an 8-bit PNG)
+leaves <b>accuracy bit-identical</b> while corrupting the model's ranking. Here is what that does
+to the frozen 5%-SLA policy on the EfficientNet-B0 probe. Policy: <code>t_low=0.0929</code>,
+<code>t_high=0.8881</code>, temperature <code>1.2785</code>, target residual risk ≤ 5%.
+Source: <code>runs/moderation_threatmodel.json</code>.</p>
+
+<table>
+<thead><tr><th>condition</th><th class="num">acc</th><th class="num">coverage</th>
+<th class="num">review%</th><th class="num">resid. risk</th><th class="num">missed fake</th>
+<th class="num">false flag</th></tr></thead>
+<tbody>
+<tr><td>clean</td><td class="num">0.8311</td><td class="num">43.2%</td><td class="num">56.8%</td>
+<td class="num">4.65%</td><td class="num">2.34%</td><td class="num">1.68%</td></tr>
+<tr><td>ace_uint8 eps0.0005 <span class="pill">control</span></td><td class="num">0.8311</td>
+<td class="num">43.2%</td><td class="num">56.8%</td><td class="num">4.65%</td>
+<td class="num">2.34%</td><td class="num">1.68%</td></tr>
+<tr><td>ace_uint8 eps0.002</td><td class="num">0.8311</td><td class="num">50.4%</td>
+<td class="num">49.6%</td><td class="num">33.06%</td><td class="num">17.01%</td><td class="num">16.28%</td></tr>
+<tr><td>ace_uint8 eps0.005</td><td class="num">0.8311</td><td class="num">50.4%</td>
+<td class="num">49.6%</td><td class="num">33.06%</td><td class="num">17.01%</td><td class="num">16.28%</td></tr>
+<tr><td>ace_uint8 eps0.0157</td><td class="num">0.8311</td><td class="num">49.6%</td>
+<td class="num">50.4%</td><td class="num">33.66%</td><td class="num">17.07%</td><td class="num">16.31%</td></tr>
+<tr><td>ace (unquantised, tensor access)</td><td class="num">0.8311</td><td class="num">17.1%</td>
+<td class="num">82.9%</td><td class="num">98.13%</td><td class="num">17.16%</td><td class="num">16.34%</td></tr>
+</tbody></table>
+
+<div class="box bad"><div class="t">Read the accuracy column, then the risk column</div>
+Accuracy is <b>0.8311 in every row of the attack</b> — the model is exactly as often right about
+the label. Yet at <code>eps0.002</code> the residual risk of the auto-decided pool goes from
+<b>4.65% to 33.06%</b> — a third of everything that ships without a human is wrong — and the harm
+half of that (fakes auto-allowed) rises from 2.34% to <b>17.01%</b>. The policy has no idea. It is
+reading a confidence signal that the attacker owns.</div>
+
+<p>The counter-intuitive column is <b>coverage</b>. It goes <i>up</i> under the realisable attack,
+43.2% → 50.4%. The attack inflates the model's confidence, so it pushes borderline items <i>out</i>
+of the review band and into auto-decisions — and those newly-automated items are the wrong ones.
+The human safety net doesn't just fail to grow with the threat; it <b>shrinks</b> exactly when it
+is most needed. (The unquantised variant does the opposite — it scatters <code>p(fake)</code> so
+violently that most items fall into review, coverage collapses to 17.1%, and the few that escape
+are almost all wrong. That version is the worst case, but it needs post-decode tensor access, not
+a file. See <a href="attacks.html">the attacks page</a> for the threat-model split.)</p>
+
+<p>For contrast, the <b>realistic</b> corruptions (JPEG re-compression, downscaling) attack the
+other axis — they cost <i>accuracy</i>, not ranking — so the same policy degrades gracefully:
+<code>jpeg_q50</code> lands at 7.45% residual risk, <code>downscale_0.5</code> at 22.46% but
+driven by false-flags (annoyance), not missed fakes. <code>runs/moderation_report.json</code>.
+Two orthogonal failure modes; the <a href="epistemics.html">epistemics page</a> is about not
+confusing them.</p>
+
+<h2>The defense payoff — a staffing cost, not an accuracy cost</h2>
+
+<p>Do the adversarially-trained checkpoints from the <a href="defenses.html">defenses page</a>
+buy anything <i>here</i>, at the moderation layer? Yes — and the shape of the payoff is the
+interesting part. Residual risk, frozen 5%-SLA policy fitted per model, matched-budget
+2/255 arms. Sources: <code>runs/d4_standard_eps2_255.json</code>,
+<code>runs/d4_at_pgd_eps2_255.json</code>, <code>runs/d4_trades_eps2_255.json</code>.</p>
+
+<table>
+<thead><tr><th>condition</th><th class="num">standard</th><th class="num">PGD-AT</th>
+<th class="num">TRADES</th></tr></thead>
+<tbody>
+<tr><td>clean — residual risk</td><td class="num">5.47%</td><td class="num">4.72%</td>
+<td class="num">4.98%</td></tr>
+<tr><td>PGD 2/255 — residual risk</td><td class="num">100.00%</td><td class="num">12.97%</td>
+<td class="num">13.51%</td></tr>
+<tr><td>ace_uint8 — residual risk</td><td class="num">19.18%</td><td class="num">8.05%</td>
+<td class="num">8.47%</td></tr>
+<tr><td>overconf — residual risk</td><td class="num">15.65%</td><td class="num">12.63%</td>
+<td class="num">12.89%</td></tr>
+<tr><td>clean — review rate (the price)</td><td class="num">27.1%</td><td class="num">50.1%</td>
+<td class="num">55.4%</td></tr>
+<tr><td>clean — accuracy</td><td class="num">0.8435</td><td class="num">0.8177</td>
+<td class="num">0.7877</td></tr>
+</tbody></table>
+
+<div class="box good"><div class="t">Under real PGD attack: 100% → 13% residual risk</div>
+The standard checkpoint <b>collapses to 100% residual risk</b> under PGD 2/255 — its accuracy goes
+to zero, it emits a constant output, everything it auto-decides is wrong. The adversarially-trained
+arms hold the auto-decided pool to <b>12.97%</b> (PGD-AT) and 13.51% (TRADES). That is the defense
+paying off exactly where D3 said it would.</div>
+
+<p>But read the last two rows. The price of that robustness is not accuracy — it is the
+<b>review rate on clean traffic</b>, which jumps from 27.1% to ~50%. The robust models are less
+confident, so more images fall into the human band even when nothing is wrong. In an ops budget
+that is a <b>staffing line</b>: roughly double the moderators for the same clean throughput.
+TRADES additionally pays ~5.6 points of clean accuracy (0.8435 → 0.7877). Whether that trade is
+worth it is a business decision the harness refuses to make for you — it just prints both columns.</p>
+
+<h2>Accuracy is defence-in-depth — the CLIP finding</h2>
+
+<p>The most useful single result in WP4 is a comparison the moderation layer makes visible and the
+raw <a href="attacks.html">attack</a> metrics hide. Run the <i>same</i> file-realisable confidence
+attack against the CLIP ViT-L/14 probe (a more accurate base detector) and against EfficientNet-B0.
+The attack succeeds identically at the <b>ranking</b> level — it destroys CLIP's failure-detection
+just as thoroughly. But the thing that ships is bounded very differently.
+Sources: <code>runs/moderation_clip.json</code>, <code>runs/condition_table_clip.md</code>
+(n = 4000 sample).</p>
+
+<table>
+<thead><tr><th>CLIP condition</th><th class="num">acc</th><th class="num">coverage</th>
+<th class="num">review%</th><th class="num">resid. risk</th><th class="num">AUROC(fail)</th></tr></thead>
+<tbody>
+<tr><td>clean</td><td class="num">0.9323</td><td class="num">95.2%</td><td class="num">4.8%</td>
+<td class="num">5.46%</td><td class="num">0.8779</td></tr>
+<tr><td>ace_uint8 eps0.005</td><td class="num">0.9323</td><td class="num">90.8%</td>
+<td class="num">9.2%</td><td class="num">7.46%</td><td class="num">0.1812</td></tr>
+</tbody></table>
+
+<p>AUROC(fail) — the model's ability to know when it is wrong — collapses from <b>0.8779 to 0.1812</b>
+(worse than a coin flip; the confidence signal is inverted). By that metric CLIP is just as broken
+as EfficientNet. Yet the residual risk of its frozen policy moves only <b>5.46% → 7.46%</b>, where
+EfficientNet went to 33%.</p>
+
+<div class="box"><div class="t">Why the same attack ships one-fifth the harm</div>
+Residual risk is an error rate, and an error rate is <b>bounded by how often the model is wrong at
+all</b>. CLIP's clean error rate is ~7%, so however cleverly the attacker reshuffles confidence, it
+cannot make the auto-decided pool much worse than the base error rate — there simply are not enough
+mistakes to promote. EfficientNet's ~17% error rate leaves far more room. The lesson for a system
+designer: <b>a more accurate base model is not just more accurate — it is a second, independent
+layer of defense against the confidence attack.</b> The two failure modes on the
+<a href="epistemics.html">epistemics page</a> — attacks on ranking vs attacks on accuracy — are
+why this works: hardening the accuracy axis caps the damage the ranking attack can do.
+(Note the honest caveat: CLIP still pays coverage, 95.2% → 90.8%, so more images go to humans; the
+attack is not free, it is just contained.)</div>
+
+<h2>The demonstrator — and its refusal to oversell itself</h2>
+
+<p><code>src/demo.py</code> is the thing you can put on a screen on 4 Sep: drop an image, get the
+three-zone verdict live. It is stdlib-only (<code>http.server</code>, no Flask) on purpose — a
+demonstrator that depends on a web framework is the thing that breaks when the camp wifi does. It
+loads the detector once, runs on CPU if the 3090 is busy holding a dictation model, and serves a
+single self-contained page on <code>127.0.0.1:8471</code>.</p>
+
+<div class="kv">
+<b>sample buttons</b><span>real / fully-synthetic / tampered, drawn only from the TEST split — a
+demo over training images would be a demo of memorisation (<code>demo.log</code>: real=7658,
+synthetic=3829, tampered=3829)</span>
+<b>ground-truth reveal</b><span>a sample carries its true label in an <code>X-Truth</code> header;
+the page shows whether the detector was <i>right</i> or <b>wrong</b>, not just its verdict</span>
+<b>policy is loaded, not computed</b><span>thresholds come straight from
+<code>moderation_report.json</code> (frozen on clean calib). A demo that re-derived its own
+thresholds would be a different system from the one the report measures</span>
+</div>
+
+<p>The most important thing the demo does is on the page itself, in a card titled
+<b>"What this is not."</b> It states, unprompted, that this is a research prototype over a held-out
+slice of the SID-Set <i>validation</i> split (the official test split is withheld by the dataset
+authors), that it is a frozen backbone with a linear head measured on one dataset, and that its
+confidence is <b>known to be attackable</b> — quoting its own headline number: a perturbation that
+leaves accuracy bit-identical drives the residual risk of this very policy from 4.7% to 98.1%. The
+demonstrator refuses to claim deployability. That refusal is the deliverable as much as the verdict
+box is.</p>
+
+<h2>Honest limits — what this layer does not prove</h2>
+
+<div class="box warn"><div class="t">Read these as plainly as the results</div>
+<ul>
+<li><b>Validation slice, not the real test set.</b> Every number here is on a held-out slice of the
+SID-Set <i>validation</i> split; the official test split is withheld. Absolute rates would move on
+the real test set.</li>
+<li><b>The SLA is a choice, not a fact.</b> 5% residual risk means one in twenty auto-decisions is
+wrong. A real platform sets that from the cost of a wrong decision and the size of its moderation
+team. It is written into every artifact so a reader can disagree explicitly rather than inherit it
+silently.</li>
+<li><b>"AT protects confidence" rests on one under-optimised epsilon.</b> The overconfidence attack
+reached only ~64% of its budget against PGD-AT — possible gradient masking, not proven robustness —
+and the under-confidence arm of that attack was never run. So the defense payoff table is a
+<b>question for the PIs</b>, not a settled refutation of the threat.</li>
+<li><b>The base detectors ride a laundered shortcut we have not ruled out.</b> The
+<a href="dataset.html">dataset page</a> shows the geometry control proves the model can't read
+aspect ratio — it does <i>not</i> prove it isn't riding the compression shortcut. Every residual-risk
+number inherits that open question.</li>
+</ul>
+</div>
+
+<div class="next">→ Next: <a href="epistemics.html">How experiments lie</a></div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

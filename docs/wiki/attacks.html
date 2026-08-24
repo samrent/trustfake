@@ -1,0 +1,204 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Attacks · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html" class="here">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>Attacks — and the two ways a detector fails</h1>
+<p class="lead">A moderation detector can be broken in two independent ways: flip the label,
+or leave the label and move the confidence. They need different attacks, they show up in
+different numbers, and a system can be immune to one while wide open to the other.</p>
+
+<p>This is the scientific spine of the whole project (deliverable D2, the attack package
+<code>src/attack_suite.py</code>). Everything else — the defenses, the moderation policy,
+the "how experiments lie" page — is downstream of getting this distinction right.</p>
+
+<div class="box"><div class="t">The one sentence to keep</div>
+<b>Prediction-targeted</b> attacks flip the label, so <b>accuracy</b> collapses.
+<b>Confidence-targeted</b> attacks keep the label and reorder the confidences, so
+<b>accuracy is untouched</b> and the <b>ranking</b> collapses instead. Report only one of
+the two numbers and the central claim becomes unfalsifiable — which is exactly why every
+table in this project prints accuracy <em>beside</em> AURC.</div>
+
+<h2>The taxonomy — three axes, not one list</h2>
+<p>Each attack in the registry (<code>attack_suite.py</code>, the <code>ATTACKS</code> dict)
+is filed on three axes. <b>Family</b> is what it targets. <b>Direction</b> is which way it
+pushes confidence. <b>Uses labels</b> is whether it needs ground truth — an attacker uploading
+to a real platform usually does not have the labels, so a label-free attack is the deployable
+one.</p>
+
+<table>
+<tr><th>Attack</th><th>Family</th><th>Direction</th><th>Uses labels?</th><th>Default budget</th></tr>
+<tr><td>FGSM</td><td>prediction</td><td>n/a</td><td>yes</td><td class="num">2/255</td></tr>
+<tr><td>PGD-L∞</td><td>prediction</td><td>n/a</td><td>yes</td><td class="num">2/255, 10 steps</td></tr>
+<tr><td>PGD-L2</td><td>prediction</td><td>n/a</td><td>yes</td><td class="num">0.5, 10 steps</td></tr>
+<tr><td>AutoAttack</td><td>prediction</td><td>n/a</td><td>yes</td><td class="num">2/255</td></tr>
+<tr><td>ACE</td><td>confidence</td><td>both</td><td>yes</td><td class="num">0.005</td></tr>
+<tr><td>ACE&nbsp;uint8</td><td>confidence</td><td>both</td><td>yes</td><td class="num">0.005 <span class="pill">realisable</span></td></tr>
+<tr><td>over-confidence</td><td>confidence</td><td>over</td><td><b>no</b></td><td class="num">4/255, 20 steps</td></tr>
+<tr><td>under-confidence</td><td>confidence</td><td>under</td><td><b>no</b></td><td class="num">4/255, 20 steps</td></tr>
+</table>
+
+<h3>The direction axis (why over/under/both matters)</h3>
+<p>Confidence-targeted attacks come in three flavours, and the flavour decides which cost line
+in the moderation budget explodes (see <a href="moderation.html">the moderation page</a> for the
+prices):</p>
+<div class="kv">
+<b>under-confidence</b><span>Push confidence <em>down</em> on predictions that were correct.
+The model abstains on work it could have done. Cost: the <b>review rate</b> explodes — wasted
+moderator hours. Label-free.</span>
+<b>over-confidence</b><span>Push confidence <em>up</em> on predictions that were wrong. The model
+auto-decides work it gets wrong. Cost: the <b>residual risk</b> explodes — wrong decisions shipped.
+This is the dangerous direction, and the one adversarial training is least likely to fix, because
+the entropy-minimising region sits in the <em>interior</em> of the decision cell, not on the
+boundary that AT hardens. Label-free, and label-preserving by construction. This is the WP3
+hypothesis the attack exists to test.</span>
+<b>both (ACE)</b><span>Push confidence down where correct and up where wrong, at once. That makes
+ACE the strongest single attack on a risk-coverage curve — and also why it needs ground-truth
+labels, which is its practical weakness in the wild.</span>
+</div>
+
+<h2>The two orthogonal failure modes — one table</h2>
+<p>Same frozen EfficientNet-B0 probe, same held-out slice (n = 15,316). The four rows below are
+recomputed here directly from the stored logits with <code>src/metrics.py</code> — accuracy from
+the argmax, AUROC(failure) and AURC from the temperature-scaled confidences. Read the last column
+first.</p>
+
+<table>
+<tr><th>Condition</th><th>Family</th><th class="num">Accuracy</th><th class="num">AUROC(fail)</th><th class="num">AURC ×10⁻³</th><th>What broke</th></tr>
+<tr><td>clean</td><td>—</td><td class="num">0.8311</td><td class="num">0.7703</td><td class="num">67.05</td><td>baseline</td></tr>
+<tr><td>ACE (tensor) ε0.005</td><td>confidence</td><td class="num">0.8311</td><td class="num">0.0002</td><td class="num">469.14</td><td><b>ranking</b> — accuracy untouched</td></tr>
+<tr><td>JPEG q30</td><td>realistic</td><td class="num">0.7787</td><td class="num">0.7148</td><td class="num">117.18</td><td><b>accuracy</b> — ranking survives</td></tr>
+<tr><td>downscale 0.5×</td><td>realistic</td><td class="num">0.6762</td><td class="num">0.7013</td><td class="num">182.94</td><td><b>accuracy</b> — ranking survives</td></tr>
+</table>
+
+<div class="box"><div class="t">Why "orthogonal" is the exact word</div>
+ACE moves accuracy by <b>zero</b> (0.8311 → 0.8311, argmax bit-identical) and sends AUROC(failure)
+to the floor (0.7703 → 0.0002). Ordinary compression does the opposite: downscaling drops accuracy
+to 0.68 while the ranking barely moves (0.7703 → 0.7013). The two axes are independent. An
+accuracy monitor is <em>blind</em> to ACE; a ranking-only monitor is <em>blind</em> to compression.
+You need both numbers or you are flying with one instrument covered.</div>
+
+<p>The same contrast holds on a trained checkpoint, where the prediction-targeted family shows its
+full face. On the standard EfficientNet arm (<code>runs/d3_comparative.md</code>): PGD at 2/255
+drives accuracy to <b>0.0000</b> (label flipped everywhere), while ACE uint8 on the same model
+leaves accuracy at <b>0.8435</b> and drops AUROC(failure) from 0.7945 to 0.1093. One attack empties
+the label; the other empties the ordering.</p>
+
+<h2>The sharpest point: what is actually realisable</h2>
+<p>ACE's tensor-access number (AUROC 0.7703 → 0.0002) is dramatic, but it is not the honest
+headline, because it needs something a real attacker may not have. The subtlety is in the grey
+levels.</p>
+
+<p>Unquantised ACE perturbs each pixel by a <em>fraction</em> of one 8-bit step. Measured effective
+perturbations (<code>runs/ace_sweep.log</code>, cross-checked in
+<code>runs/CLAIM_AUDIT_2026-08-19.md</code>): mean per-sample L∞ of
+<b>0.102 / 0.261 / 0.447</b> grey levels at ε = 0.0005 / 0.002 / 0.005, with per-sample
+<b>maxima 0.128 / 0.510 / 1.275</b>. A saved image file can only hold integer grey levels
+(<code>k/255</code>), and round-to-nearest annihilates any change below <b>half</b> a grey level
+(0.5/255 = 0.00196; the step itself is 1/255 = 0.00392). So:</p>
+
+<div class="kv">
+<b>Unquantised ACE</b><span>describes an attacker with post-decode <b>tensor</b> access — someone
+already inside the pipeline, after the image has been decoded to floats.</span>
+<b>ACE uint8</b><span>snaps every perturbed pixel back onto <code>k/255</code> — the
+<b>file-realisable</b> attacker who can only upload a PNG. This is the moderation threat model that
+actually matters.</span>
+</div>
+
+<table>
+<tr><th>ε</th><th class="num">mean grey</th><th class="num">max grey</th><th>rounds to</th><th>file-realisable effect (AUROC fail)</th></tr>
+<tr><td>0.0005</td><td class="num">0.102</td><td class="num">0.128</td><td>nothing (&lt; ½ step)</td><td><b>0.7703 → 0.7703</b> — vanishes, the control</td></tr>
+<tr><td>0.002</td><td class="num">0.261</td><td class="num">0.510</td><td>1 grey level (25.4% of images)</td><td>0.7703 → <b>0.0471</b></td></tr>
+<tr><td>0.005</td><td class="num">0.447</td><td class="num">1.275</td><td>1 grey level (25.4% of images)</td><td>0.7703 → <b>0.0471</b></td></tr>
+<tr><td>0.0157</td><td class="num">—</td><td class="num">4.000</td><td>up to 4 grey levels</td><td>0.7703 → 0.0378</td></tr>
+</table>
+
+<div class="box good"><div class="t">The honest headline</div>
+At ε = 0.0005 the attack <b>vanishes on the file lattice</b> — that is a genuine control, not a
+weak result. At ε = 0.002 and 0.005, exactly <b>3,889 of 15,316 images (25.4%)</b> retain a full
+one-grey-level change, and that quarter of the traffic is enough to send AUROC(failure) to 0.0471.
+The headline is therefore not "ACE destroys ranking" (that needs tensor access) but
+<b>"a quarter of uploads, perturbed by one grey level, is enough."</b> Under the frozen 5%-SLA
+moderation policy this same one-grey-level attack moves residual risk from
+<b>4.65% to 33.06%</b> and pushes coverage <em>up</em> from 43.2% to 50.4% — the pipeline
+auto-decides <em>more</em> while getting <em>more</em> of it wrong. Details on
+<a href="moderation.html">the moderation page</a>.</div>
+
+<p>The ε = 0.002 and ε = 0.005 rows are identical, which looks like a copy-paste bug but is a
+mechanism: round-to-nearest maps both halving ladders (0.51, 0.26, … and 1.28, 0.64, 0.32, …) onto
+the same two-point set {one grey level, nothing}, so both attacks explore the same lattice.</p>
+
+<div class="box warn"><div class="t">The discipline this forces</div>
+Tensor-access numbers must <b>never</b> be quoted as file-upload numbers — a saved file is a
+different input, not because the perturbation is "erased" but because it lives on a different grid.
+Every attacked row in this project is labelled with which threat model it belongs to. The unquantised
+0.0002 and the file-realisable 0.0471 are both true; they answer different questions.</div>
+
+<h3>The same attack against the stronger detector</h3>
+<p>The CLIP ViT-L/14 probe (n = 4,000) is hit by the identical file-realisable ACE: accuracy stays
+at <b>0.9323</b> and AUROC(failure) falls from 0.8779 to <b>0.1812</b> (0.0102 under tensor access).
+But because CLIP's clean error rate is so low, its residual risk under the moderation policy only
+moves from <b>5.46% to 7.46%</b> — the small error rate <em>bounds</em> the damage. That is the one
+place where plain accuracy earns its keep: it is defence-in-depth against a ranking attack. See
+<a href="moderation.html">moderation</a> and <a href="defenses.html">defenses</a>.</p>
+
+<h2>The AutoAttack-on-binary gotcha</h2>
+<p>AutoAttack is the standard "did you actually test robustness or fool yourself" ensemble. It does
+not run out of the box on a two-class detector, and the way it fails is a trap.</p>
+
+<div class="box bad"><div class="t">apgd-t needs four logits; a detector has two</div>
+The targeted component <code>apgd-t</code> reads <code>x_sorted[:,-3]</code> and
+<code>[:,-4]</code> to build its targeted DLR loss, so it needs ≥ 4 logits and raises
+<code>IndexError: index -3 is out of bounds for dimension 1 with size 2</code> on a binary head.
+The package <em>warns</em> for ≤ 2 classes and then runs anyway. Worse: with
+<code>version='standard'</code> the crash only fires once points <b>survive</b> the earlier
+<code>apgd-ce</code> stage — so it appears to work against a weak detector and dies against a robust
+one, i.e. it breaks <em>precisely when the defense (WP3) succeeds</em>. Forcing
+<code>n_classes=3</code> on a 2-logit model does not help.</div>
+
+<p>The mechanism (DLR needing four logits) is derivable and certain. The safe composition used here
+is <code>apgd-ce + fab-t</code> (with <code>n_target_classes=1</code>) <code>+ square</code>, with
+Square query-bounded because it is by far the slowest piece (~2.8 img/s). One honest caveat: the
+exact <code>IndexError</code> is documented in the code from a development run, and under the
+no-GPU audit constraint it was <em>not</em> re-executed — it is marked as a code-recorded
+observation, not an independently re-run artifact.</p>
+
+<pre><code>AutoAttack(model, norm="Linf", eps=eps, version="custom",
+           attacks_to_run=["apgd-ce", "fab-t", "square"])
+aa.fab.n_target_classes = 1     # default reaches for logits that do not exist
+aa.square.n_queries    = 500    # Square is the slow component; bound it</code></pre>
+
+<h2>What to take away</h2>
+<div class="kv">
+<b>Two failure modes</b><span>label-flip (accuracy) and confidence-reorder (ranking) are independent;
+measure both, always.</span>
+<b>Direction is a cost</b><span>over-confidence buys residual risk, under-confidence buys review rate;
+they are not symmetric.</span>
+<b>Label-free is deployable</b><span>ACE is strongest but needs labels; the over/under-confidence
+attacks need none.</span>
+<b>Realisable ≠ tensor</b><span>the honest number is the file-lattice one; the one-grey-level attack
+on a quarter of traffic is the headline.</span>
+<b>Binary breaks tooling</b><span>AutoAttack silently mis-runs on 2 logits; the composition matters.</span>
+</div>
+
+<div class="next">→ Next: <a href="defenses.html">Defenses</a></div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

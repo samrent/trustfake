@@ -1,0 +1,177 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The dataset · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html" class="here">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>The dataset: SID-Set and its traps</h1>
+<p class="lead">Everything downstream — every accuracy, every attack, every defense — is measured on
+this data. If the data has a trapdoor, so does every number. It has two, and this page walks you
+into both so that no accuracy on this page ever looks better than it is.</p>
+
+<div class="box"><div class="t">The one sentence to carry off this page</div>
+On SID-Set an accuracy is not evidence of forensic capability until you read it against
+<b>0.9785</b> — a one-line metadata rule with no model in it — not against the 0.5 you would
+naively compare a coin-flip to. Every table in this project prints that baseline for exactly this
+reason.</div>
+
+<h2>What the data is</h2>
+<p>SID-Set is a public "Social-media Image Detection" dataset, pulled from HuggingFace as
+<code>saberzl/SID_Set</code> (cc-by-4.0, ungated). It ships three classes. Our binary task folds
+them to <b>real vs fake</b>: class 0 is real, classes 1 and 2 are both fake.</p>
+
+<table>
+<tr><th>label</th><th>meaning</th><th>where it comes from</th><th>fold</th></tr>
+<tr><td class="num">0</td><td>real photograph</td><td>content-hash named; reals are not
+deduplicated against the tampered originals</td><td>real (y=0)</td></tr>
+<tr><td class="num">1</td><td>fully synthetic</td><td>generated whole-image; numbered
+sequentially <code>full_synthetic_000155</code>…</td><td>fake (y=1)</td></tr>
+<tr><td class="num">2</td><td>tampered</td><td>real bases from COCO / OpenImages / Flickr30k with
+a local region edited</td><td>fake (y=1)</td></tr>
+</table>
+
+<div class="kv">
+<b>repo</b><span><code>saberzl/SID_Set</code> — 249 train shards (123.2 GB) + 34 validation shards (16.8 GB)</span>
+<b>official test</b><span>60k images <b>withheld</b> by the authors; not on HuggingFace, requested via the SIDA repo</span>
+<b>our split</b><span>a held-out slice carved from the <b>validation</b> shards — see the caveat below</span>
+<b>fold rule</b><span><code>y = 0</code> real, <code>y = 1</code> synthetic OR tampered — a single fake class</span>
+<b>prior</b><span>rebalanced to 50/50 by construction, so accuracy and F1 are read against a 0.5 base rate</span>
+<b>source files</b><span><code>src/fetch_sid_set.py</code>, <code>src/manifest.py</code>, <code>runs/manifest_v1.json</code></span>
+</div>
+
+<p>Within the fake class the two sub-tasks are not equally hard. On the CLIP probe, real-vs-synthetic
+scores AURC 5.47&times;10<sup>-3</sup> while real-vs-tampered scores 19.63 — local edits are about
+<b>3.6&times;</b> harder to catch than whole-image fakes (<code>README.md</code> results table). The
+interesting forensic curve lives in the tampered class; the shortcut below lives in both.</p>
+
+<h2>The shortcut that beats every model</h2>
+<p>SID-Set carries a geometry-and-format artifact so strong that a rule you could write on a napkin
+outscores every trained detector in this project. Measured on the exact test split
+(n = 15,316, 50/50 prior), from parquet metadata alone — no GPU, no model
+(<code>src/baselines.py</code>, <code>runs/trivial_baselines.json</code>):</p>
+
+<table>
+<tr><th>rule</th><th class="num">accuracy</th><th>what it is</th></tr>
+<tr><td><code>width == height</code> &rarr; fake</td><td class="num"><b>0.9785</b></td><td>one metadata comparison, no learning</td></tr>
+<tr><td>decode-scale threshold &rarr; fake</td><td class="num">0.9798</td><td>frozen-on-calib threshold on the 1024&rarr;256 downscale factor</td></tr>
+<tr><td>original format PNG &rarr; fake</td><td class="num">0.7673</td><td>one metadata comparison, no learning</td></tr>
+<tr><td>CLIP ViT-L/14 probe</td><td class="num">0.9289</td><td>a real trained detector</td></tr>
+<tr><td>EfficientNet-B0 probe</td><td class="num">0.8311</td><td>a real trained detector</td></tr>
+<tr><td>majority class</td><td class="num">0.5000</td><td>guess "fake" every time</td></tr>
+</table>
+
+<div class="box bad"><div class="t">The implication — this is the whole point of the page</div>
+The CLIP probe's 0.9289 is <b>below</b> the 0.9785 you get for free. Reporting 0.9289 as a success
+is reporting a number that a <code>width == height</code> check beats. So the honest reading of any
+accuracy on SID-Set is: <b>the model earns credit only for the gap above 0.9785, not above 0.5.</b>
+Read against 0.5 it looks like a strong detector; read against 0.9785 it is, on paper, losing to a
+napkin. This is a known dataset bias (Grommelt et al., "Fake or JPEG? Revealing Common Biases in
+Generated Image Detection Datasets"), and it is why the harness forces every table to print the
+baseline instead of quietly comparing to 0.5.</div>
+
+<h2>Where the shortcut lives: format and size, per class</h2>
+<p>The rule works because the label is almost perfectly encoded in the file's shape and format. All
+fakes are square; almost no reals are (<code>runs/trivial_baselines.json</code>):</p>
+
+<table>
+<tr><th>class</th><th class="num">square (w==h)</th><th class="num">short side == 1024</th><th class="num">original PNG</th></tr>
+<tr><td>0 — real</td><td class="num">4.3%</td><td class="num">4.0%</td><td class="num">0%</td></tr>
+<tr><td>1 — synthetic</td><td class="num">100%</td><td class="num">100%</td><td class="num">100%</td></tr>
+<tr><td>2 — tampered</td><td class="num">100%</td><td class="num">100%</td><td class="num">6.9%</td></tr>
+</table>
+
+<p>Class 1 is 100% square 1024&times;1024 PNG; class 2 is 100% square; only ~4% of reals are square.
+The <code>width == height</code> rule mislabels only the roughly 4% of reals that happen to be square,
+which is exactly why it lands at 0.9785 rather than 1.0. Format leaks too: 100% of synthetic images
+were PNG and 0% of reals were, so "was it a PNG?" alone scores 0.7673.</p>
+
+<h2>Do our models ride the shortcut? The geometry control</h2>
+<p>Our detectors never see width and height — images arrive as 224&times;224 centre crops, so aspect
+ratio is discarded before the model. To prove the model isn't secretly reading geometry, we re-ran the
+CLIP probe under <code>squarecrop</code>: centre-crop every image to a square in <b>both</b> fitting and
+evaluation, which makes aspect ratio carry zero label information by construction
+(<code>src/features.py::apply_condition</code>, <code>runs/condition_table_controlled.md</code>).</p>
+
+<table>
+<tr><th>CLIP ViT-L/14 probe</th><th class="num">accuracy</th><th class="num">AUROC(det)</th><th class="num">AURC &times;10<sup>-3</sup></th></tr>
+<tr><td>uncontrolled</td><td class="num">0.9289</td><td class="num">0.9801</td><td class="num">11.83</td></tr>
+<tr><td>geometry-controlled (<code>squarecrop</code>)</td><td class="num">0.9291</td><td class="num">0.9802</td><td class="num">11.75</td></tr>
+</table>
+
+<div class="box warn"><div class="t">Honest reading — this is a null result, not an exoneration</div>
+<p>Accuracy barely moves (0.9289 &rarr; 0.9291), and it is tempting to call that "the model does not
+use the shortcut." It does not license that claim. Two confounds:</p>
+<p><b>The control is a near no-op.</b> <code>squarecrop</code> centre-crops to the shorter side, which
+is a <b>bit-exact no-op on 100% of the fakes</b> (they are already square), and both arms already feed
+the backbone a 224&times;224 centre crop — so aspect ratio was discarded either way. What this
+establishes: the model <b>cannot read aspect ratio</b>. What it does <b>not</b> establish: that the
+model is not riding the shortcut.</p>
+<p><b>The shortcut is laundered, not removed.</b> The decode cache re-encodes every image to JPEG q95,
+turning a PNG-vs-JPEG provenance difference into a single-vs-double compression trace a CNN can learn —
+plus a resampling history that cropping cannot touch. The evidence it survives: the decode-scale
+threshold (1024&rarr;256 = 0.25&times; for 100% of fakes, 4.0% of reals) still scores <b>0.9798</b> on
+the model's actual input pixels.</p>
+<p><b>So it is an open problem.</b> Whether the probe rides that laundered residue is <b>unresolved</b>.
+The settling experiment is named in <code>src/baselines.py</code>'s own docstring and has <b>not been
+run</b>: evaluate on a format/compression-matched subset — pass every image through one identical JPEG
+re-encode, or restrict to real&cap;JPEG vs tampered&cap;JPEG — so that compression provenance carries no
+label information. This is a WP1 <b>protocol</b> change, and it is worth more than any accuracy point.</p>
+</div>
+
+<h2>Trap two: <code>img_id</code> is not a key</h2>
+<div class="box bad"><div class="t">19,107 img_ids appear in BOTH the train and validation splits</div>
+<p>Synthetic and tampered images are numbered sequentially and the counter <b>restarts per split</b>,
+so <code>full_synthetic_000155</code> exists in train and in validation as <b>different bytes</b>.
+A full 283-shard scan (<code>runs/img_id_collisions.json</code>) finds <b>19,107</b> colliding img_ids —
+10,000 synthetic and 9,107 tampered. Every one of the 10,000 fully-synthetic validation img_ids collides
+with a train image.</p>
+<p>The trap is that it <b>fails silently</b>: the real class is content-hash named and has <b>zero</b>
+collisions, so if you spot-check reals the problem is invisible. A flat feature cache keyed on
+<code>img_id</code> silently overwrites fit images with test images; a join between two npz files
+silently merges the wrong rows — leakage that raises your number and leaves no error.</p>
+<p><b>The fix, enforced in the manifest:</b> the real key is
+<code>uid = "&lt;source_split&gt;:&lt;img_id&gt;"</code>. Everything joins on <code>uid</code>, never on
+<code>img_id</code>. This is why <code>uid</code> exists as a column at all.</p>
+</div>
+
+<h2>Trap zero: this is validation, not test</h2>
+<div class="box warn"><div class="t">Every number in this wiki is on the validation slice</div>
+<p>The official SID-Set test split — 60k images — is <b>withheld by the authors</b> to prevent
+leakage. It is not on HuggingFace. Everything here is carved from the <b>validation</b> shards and
+labelled, in every sidecar, <code>SID-Set validation split, held-out slice</code>. Never call these
+numbers a "test set" result. If the authors grant the test set, re-running the manifest against it is
+about 20 minutes.</p>
+<p>One further dataset property, not a protocol flaw: tampered images derive from COCO / OpenImages /
+Flickr30k and the dataset exposes no key linking a tampered image to its real source, so near-duplicate
+<i>content</i> can straddle any split and no split rule can prevent it. State this as a limit, not a fix.</p>
+</div>
+
+<h2>A footnote that matters: the cache is lossy</h2>
+<p>The decode cache is stored at short-side 256, JPEG q95 (<code>src/decode.py</code>,
+<code>runs/decode_report.json</code>). That is fine for the CLIP/EffNet probes, which resize to 224
+anyway, but it is <b>the mechanism that launders PNG into JPEG</b> — and it is unsuitable for any
+frequency-domain forensic detector, which is why the raw parquet is retained alongside the cache. Keep
+this in mind whenever a result seems to depend on compression: some of it may be the cache, not the
+image.</p>
+
+<div class="next">&rarr; Next: <a href="attacks.html">Attacks</a> — how a perturbation below one grey
+level erases a detector's confidence while leaving its accuracy untouched.</div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

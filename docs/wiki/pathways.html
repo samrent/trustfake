@@ -1,0 +1,300 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>To 4 Sep · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html" class="here">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>To 4 Sep — the road to the deliverable</h1>
+<p class="lead">The stack is built and measured. What remains is a scheduling problem
+with two hard deadlines: boarding tonight (loses the network and the GPU) and the final
+talk on 4 Sep. This page is the plan, framed as an engineer's release checklist.</p>
+
+<div class="box"><div class="t">Where this comes from</div>
+Everything here is distilled from one planning document,
+<code>FILES/PROJECTS/trustfake/PATHWAYS-2026-08-23.md</code> (a 6-agent gap-map written
+23 Aug ~22:20, while a ViT-L/14 attack run occupied the GPU). It maps the built system
+against the final deliverable and ranks the moves to close the gap. Metric numbers on this
+page (accuracies, residual risks) trace back through <code>runs/</code> — see
+<a href="moderation.html">the moderation page</a> and <a href="defenses.html">the defenses
+page</a> for their derivations. Here the numbers that matter are hours, deadlines, and order
+of operations.</div>
+
+<h2>The deliverable</h2>
+<div class="kv">
+<b>Event</b><span>Camp TReC 2026, 24 Aug – 4 Sep, Lausanne. PIs: Sournac, Ben Jmaa.</span>
+<b>Final artifact</b><span>A ~24-minute talk on 4 Sep, plus a reusable "brick" for the
+TRAIL Factory (a packaged, dependency-light version of the harness).</span>
+<b>The owner's role</b><span>WP1 (the eval harness) and WP4 (selective moderation). Three
+other subgroups will build WP2/WP3/uncertainty <em>against</em> him as the scorer.</span>
+<b>The one-line thesis</b><span>"We measured that confidence can be hacked, priced it, and
+priced the fix" — every clause carries a number from <code>runs/</code>.</span>
+</div>
+
+<h2>Three deadlines, three hardness classes</h2>
+<p>The plan sorts every remaining task by <em>what resource it needs</em>, because two
+resources vanish at boarding. Think of it as capability windows closing in sequence.</p>
+
+<table>
+<thead><tr><th>Class</th><th>Meaning</th><th>Window</th></tr></thead>
+<tbody>
+<tr><td><span class="pill">NETWORK-HARD</span></td><td>Needs the internet (weight
+downloads, <code>git push</code>). Impossible once the plane door closes.</td>
+<td>Tonight only</td></tr>
+<tr><td><span class="pill">GPU-HARD</span></td><td>Needs the local RTX 3090. Camp VRAM is
+~9&nbsp;GB shared, so anything ViT-L/14-sized cannot run there.</td>
+<td>Tonight only (for the big cells)</td></tr>
+<tr><td><span class="pill">PLANE-CAPABLE</span></td><td>Pure CPU, offline. Writing the talk,
+the numpy scoring code, the two-axis policy.</td><td>Any time — plane, camp, anywhere</td></tr>
+</tbody>
+</table>
+
+<div class="box warn"><div class="t">The competing demand tonight</div>
+The Prototype Fund grant dossier is also due today and may eat the whole evening. So the
+pre-boarding list is <strong>ranked</strong>: a starred core of ~3.5 attended hours preserves
+every downstream option; everything else degrades gracefully to the plane or camp. If the
+dossier consumes the night, the core still has to happen.</div>
+
+<h2>Tonight — the pre-boarding checklist</h2>
+<p>These are the items that are <em>irreversible if missed</em>, because they need the network
+or the 3090. The four starred items (marked ★) are the ones that survive even a brutal time cut.</p>
+
+<table>
+<thead><tr><th>#</th><th>Item</th><th>Why it must be tonight</th><th class="num">Attended</th></tr></thead>
+<tbody>
+<tr><td><b>P1 ★</b></td><td>Fetch ResNet-18/50 weights + run the offline acceptance test</td>
+<td>Verified absent from every cache tonight. The camp will train ResNets (the deck names
+them as THE backbone); without the weights, the baseline is unloadable for two weeks. The one
+<strong>truly irreversible</strong> item.</td><td class="num">30 min</td></tr>
+<tr><td><b>P2 ★</b></td><td><code>ensurepip</code> into the venv</td>
+<td>The uv virtualenv ships with no <code>pip</code>. Any offline dependency fix at camp is
+otherwise impossible.</td><td class="num">5 min</td></tr>
+<tr><td><b>P3 ★</b></td><td>Send the Sournac email with the freeze-date question</td>
+<td>"Is code freeze Tue 1&nbsp;Sep or Thu 3&nbsp;Sep?" — the answer sets the entire week-2
+schedule. Needs the network to send.</td><td class="num">5 min</td></tr>
+<tr><td><b>P4 ★</b></td><td>Write the overnight GPU queue and <code>nohup</code> it behind the
+running attack job</td><td>One script that waits for the current PID, then runs the
+ViT-only attack cells (camp-infeasible), the demo image dump, cheap EfficientNet cells, and
+the AutoAttack triple on the three defense arms — 8–12&nbsp;h unattended while he packs and
+sleeps.</td><td class="num">30 min<br>+ ~8–12 h GPU</td></tr>
+<tr><td><b>P5 ★</b></td><td>Publish contract v1.1 — the sigma slot — and <code>push</code></td>
+<td>The one code item that wants the network. Extends the file format that becomes the whole
+camp's integration point (see below). A missed push is survivable over flaky camp wifi, but
+risky.</td><td class="num">2.5 h</td></tr>
+<tr><td>P6</td><td>Create + seed the harness-only repo</td><td>If option 2 is chosen (see
+owner decisions), push the seed while the network exists; content refreshes from
+camp.</td><td class="num">1–2 h</td></tr>
+<tr><td>P7</td><td><code>--dump-images</code> flag + curate demo image IDs</td><td>Feeds the
+live-demo "flip" moment; small code + numpy.</td><td class="num">1 h</td></tr>
+<tr><td>P8</td><td><code>src/d2_matrix.py</code> — the one-table vulnerability matrix</td>
+<td>Pure CPU; testable now against the existing 44 prediction files while the GPU is
+busy.</td><td class="num">2–3 h</td></tr>
+<tr><td>P9</td><td>Screen-record the demo flip</td><td>Venue-wifi-proof fallback for the talk's
+payoff — record it once P4's image dump lands.</td><td class="num">30 min</td></tr>
+</tbody>
+</table>
+
+<div class="box good"><div class="t">The reassuring property</div>
+P1–P5 are the ~3.5 attended hours that <em>preserve every option</em>. P6–P9 all degrade
+gracefully: they can move to the plane or camp without killing anything. The design goal of
+the whole plan is that a lost evening costs polish, never capability.</div>
+
+<h2>The sigma seam — why the harness becomes the camp's spine</h2>
+<p>This is the single highest-leverage move in the plan, and it will feel familiar to anyone
+who has designed a service boundary. The PIs' central decision diagram wants a
+<strong>per-image uncertainty number</strong> (called sigma, <code>&sigma;</code>) that says
+"how unsure is the model about this one image?" — used to route uncertain images to a human
+reviewer. But <em>uncertainty estimation is other people's job</em>: three subgroups will
+build it (MC-Dropout, deep ensembles, evidential heads). It is also literally Sournac's
+research area.</p>
+
+<div class="box"><div class="t">The boundary rule, stated once</div>
+<b>THEIRS</b> = producing the sigma array — the forward passes, the ensemble members, the
+scale choice, running it under attack.<br>
+<b>OURS</b> = the schema, the validation, the rank-based scoring, the fitted-and-frozen policy,
+the degeneracy audit, the demo display.<br>
+<b>The boundary is the <code>.npz</code> file.</b> One file format lets one person score the
+PIs' own research area without ever building — or arguing about — an estimator.</div>
+
+<p>In distributed-systems terms: this is defining the message contract at an integration seam.
+You do not import the other team's code or depend on their internals; you publish a schema,
+validate anything that arrives against it, and everyone who wants to be scored conforms to your
+wire format. The npz today already carries predictions, labels, and a per-split checksum. The
+seam adds one optional field and a mandatory sidecar describing it.</p>
+
+<pre><code>sigma   float32[n]   OPTIONAL — per-image uncertainty, higher = more uncertain
+
+"sigma_semantics": {
+  "method":      "mc_dropout | deep_ensemble | evidential | ...",
+  "n_samples":   &lt;int&gt;,             // MC passes or ensemble members
+  "scale":       "predictive_entropy | variance | ...",
+  "higher_means":"more_uncertain",   // literal; producers convert, WP1 never flips
+  "seed":        &lt;int&gt;
+}</code></pre>
+
+<p>Three contract rules make the owner the <em>referee</em> rather than a competitor:</p>
+<ul>
+<li>Sigmas of different <code>scale</code> are never compared in one table (same discipline as
+never mixing batch sizes).</li>
+<li>Sigma thresholds are fitted per model on clean calibration data and then frozen — exactly
+like the moderation thresholds already are.</li>
+<li><strong>A submitted sigma must beat the plain-confidence baseline through the frozen policy
+to count.</strong> If a team's sigma is secretly just a function of the softmax confidence, the
+two-axis policy provably collapses to the one-axis policy — the same
+<a href="epistemics.html">temperature-invariance</a> result that appears elsewhere in the
+project. A useless sigma is <em>detected and reported</em>, never silently accepted.</li>
+</ul>
+
+<div class="box good"><div class="t">Why publishing it on Day 1 wins</div>
+Whoever owns the contract owns the integration. If the schema is published on Day 1 and demoed
+live ("here is what your MC-Dropout npz looks like; here is the table it prints"), then every
+subgroup's output arrives in <em>the owner's</em> format from the start — and the harness is the
+scoreboard, not a competitor. The full seam is ~13 hours of pure-CPU, zero-GPU work; only the
+one Day-1 <code>push</code> needs the network. Everything after the schema itself is
+plane-capable.</div>
+
+<h2>Plane and Day-1 work</h2>
+<p>The plane is for the things that need calm, not network: the talk and the numpy.</p>
+<table>
+<thead><tr><th>When</th><th>Item</th><th class="num">Cost</th></tr></thead>
+<tbody>
+<tr><td>Plane</td><td>The talk's beat structure — cold open → Detect / Stress / Harden / Act →
+demo → limitations → handoff, every number cited to its <code>runs/</code> file</td>
+<td class="num">3 h</td></tr>
+<tr><td>Plane</td><td>The two-axis moderation policy + sigma scoring + fixtures + tests (pure
+numpy)</td><td class="num">6 h</td></tr>
+<tr><td>Day 1 AM</td><td>ResNet parity rows — claim the 8 AM GPU slot before the subgroups do;
+every entrypoint is already backbone-parametric, so zero code changes, &le;30 min GPU</td>
+<td class="num">~2 h</td></tr>
+<tr><td>Day 1</td><td>Publish the contract + submission checklist; demo the sigma fixture loop
+live</td><td class="num">1 h</td></tr>
+<tr><td>Day 1</td><td>Small robustness fixes: a stem-collision guard, a graceful-skip so the
+first foreign checkpoint scores without a crash</td><td class="num">~2 h</td></tr>
+<tr><td>Day 1 PM</td><td>One standard ResNet arm through training — proves the WP3 handover lane
+on the architecture the PIs named</td><td class="num">~0.5 h</td></tr>
+</tbody>
+</table>
+<div class="box"><div class="t">The ResNet floor, framed correctly</div>
+The frozen ResNet probe will score well below the CLIP L/14 probe (0.9291 clean,
+<a href="harness.html">the harness page</a>). That is the expected literature ordering — CLIP
+features beat supervised-CNN features for fake detection. It must be presented on Day 1 as
+<em>the floor that motivates the camp's fine-tuned ResNet</em>, not as a weak result to be
+discovered by someone else later.</div>
+
+<h2>Owner decisions — options and a recommendation</h2>
+<p>These are the four choices only the owner can make; each has a recommendation and a reason.</p>
+
+<h3>Licence for the brick</h3>
+<div class="kv">
+<b>Recommended</b><span>Apache-2.0 — explicit patent grant, the default for research-consortium
+artifacts, least friction for "is this a TRAIL Factory brick?"</span>
+<b>Alternatives</b><span>MIT/BSD-3 (max reuse, no reciprocity); MPL-2.0 (file-level copyleft);
+AGPL-3.0 anti-recommended — it deters the very organizations the Factory serves.</span>
+<b>Flag</b><span>The Prototype Fund grant's open-source bar may constrain what is shared with
+that dossier — check <em>before</em> signing a licence. No <code>LICENSE</code> file exists yet
+(verified).</span>
+</div>
+
+<h3>Repo visibility</h3>
+<div class="kv">
+<b>Recommended</b><span>Option 2 — a new harness-only repo (contract + the numpy modules + tests
++ checksums + a positioning-stripped README). Create and push tonight; it doubles as the brick
+seed.</span>
+<b>Rejected</b><span>Inviting collaborators into the existing private repo as-is: it exposes the
+"built pre-camp" framing and the pre-done WP2/WP3 story — a territorial insult to the WP3
+subgroup.</span>
+</div>
+
+<h3>ResNet — or not</h3>
+<div class="kv">
+<b>Recommended</b><span>YES to the cheap parity layer (weights tonight, frozen-probe rows + one
+standard arm Day 1, &le;1 h GPU total). NO to robust ResNet arms — that is WP3's fortnight.</span>
+<b>Decision needed tonight</b><span>The canonical weight tag, so the fetch list and the Day-1
+commands agree — recommend <code>tv_in1k</code> (torchvision parity), with <code>a1_in1k</code>
+fetched as insurance.</span>
+</div>
+
+<h3>Freeze date</h3>
+<div class="kv">
+<b>Recommended</b><span>Plan every code-bearing item to land by Mon 31 Aug; treat 2–3 Sep as
+buffer that may not exist. The P3 email resolves the real date.</span>
+</div>
+
+<h2>What to decline</h2>
+<p>Half of a good plan is the list of tempting work that is <em>not</em> the owner's job. Each
+of these has a specific reason to refuse.</p>
+<table>
+<thead><tr><th>Temptation</th><th>Why decline</th></tr></thead>
+<tbody>
+<tr><td>Build any uncertainty estimator, even "just a reference"</td><td>The political
+constraint — it is the PIs' research area and three subgroups' assignment. The sigma seam is
+designed so a fixture file makes every argument an estimator would, without building
+one.</td></tr>
+<tr><td>Pre-build robust ResNet (AT / TRADES) arms</td><td>That is WP3's fortnight. Arrive with
+the frozen-probe floor + one standard arm; offer matched budgets only if asked.</td></tr>
+<tr><td>Three-class detection, localization, OOD, extra backbones</td><td>All explicitly
+"optional extensions… only if time and compute allow" in the proposal. Binary is the committed
+scope.</td></tr>
+<tr><td>Settle the laundered-shortcut question now</td><td>Real science (see
+<a href="dataset.html">the dataset page</a> and <a href="epistemics.html">how experiments
+lie</a>), but it needs re-encoding + refits and serves no D1–D4 line. It is a limitations-slide
+sentence, not camp work.</td></tr>
+<tr><td>A second dataset</td><td>"A second dataset is a data adapter, not a rebuild" — proven by
+the ResNet adapter; actually running one only dilutes the talk.</td></tr>
+<tr><td>Wide agent fleets for camp coordination</td><td>The contract + submission checklist +
+one-command refresh <em>is</em> the coordination layer. One file format beats any
+process.</td></tr>
+</tbody>
+</table>
+
+<h2>What kills the talk — the top risks</h2>
+<table>
+<thead><tr><th>Risk</th><th class="num">P</th><th>Guard</th></tr></thead>
+<tbody>
+<tr><td>ResNet weights never fetched — baseline unloadable for two weeks</td>
+<td class="num">med</td><td>P1 first, before the dossier. The only truly irreversible
+item.</td></tr>
+<tr><td>A teammate's file with shuffled/poisoned labels silently corrupts the tables</td>
+<td class="num">med</td><td>Week-1 ground-truth cross-check in the verifier — the one hole that
+produces confidently wrong slides.</td></tr>
+<tr><td>The claim-audit collides with README edits</td><td class="num">high if
+ignored</td><td>Hard rule: no README claim edits until the audit merges; the new files don't
+collide.</td></tr>
+<tr><td>Live demo dies at the venue</td><td class="num">low</td><td>stdlib + localhost +
+automatic CPU fallback + the P9 recording + screenshots.</td></tr>
+<tr><td>Political: subgroups find their fortnight pre-done</td><td class="num">med</td><td>Notes
+never committed; harness-only repo; staged reveal; floor-framing of the ResNet row.</td></tr>
+<tr><td>The PF dossier eats the whole pre-boarding window</td><td class="num">high</td><td>The
+core is ~3.5 attended hours; everything else is plane/camp-capable by design.</td></tr>
+</tbody>
+</table>
+
+<h2>The one-sentence version</h2>
+<div class="box good">
+Tonight buys the weights, the sigma contract, and an unattended GPU queue; the plane writes the
+talk and the two-axis policy; Day 1 publishes the contract and the ResNet floor; week 1 turns
+the harness into the camp's scoreboard; week 2 only regenerates tables — and every claim on
+4 Sep already has a file in <code>runs/</code> behind it.</div>
+
+<p>For the vocabulary used throughout this wiki — sigma, AURC, MSP, PGD, TRADES, residual risk,
+frozen policy — see the glossary.</p>
+
+<div class="next">→ Next: <a href="glossary.html">Glossary</a></div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

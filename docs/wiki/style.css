@@ -1,0 +1,39 @@
+:root{
+  --bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#e6edf3;--mut:#8b949e;
+  --acc:#58a6ff;--good:#3fb950;--warn:#d29922;--bad:#f85149;--code:#1c2128;
+}
+@media(prefers-color-scheme:light){:root{
+  --bg:#ffffff;--panel:#f6f8fa;--line:#d0d7de;--fg:#1f2328;--mut:#656d76;
+  --acc:#0969da;--good:#1a7f37;--warn:#9a6700;--bad:#cf222e;--code:#f6f8fa;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.65 ui-sans-serif,system-ui,"Segoe UI",sans-serif}
+nav{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);
+  padding:10px 24px;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;z-index:9}
+nav a{color:var(--mut);text-decoration:none;padding:2px 4px;border-radius:4px}
+nav a:hover{color:var(--fg)} nav a.here{color:var(--acc);font-weight:600}
+main{max-width:900px;margin:0 auto;padding:34px 24px 90px}
+h1{font-size:26px;margin:.2em 0 .3em} h2{font-size:20px;margin:1.6em 0 .5em;
+  border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:16.5px;margin:1.3em 0 .4em}
+a{color:var(--acc)} p{margin:.55em 0}
+.lead{font-size:17.5px;color:var(--mut)}
+table{border-collapse:collapse;margin:14px 0;font-size:14px;width:100%}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+th{background:var(--panel)} td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px}
+code{background:var(--code);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+pre{background:var(--code);border:1px solid var(--line);border-radius:8px;
+  padding:14px;overflow-x:auto;line-height:1.5}
+pre code{background:none;border:none;padding:0}
+.box{border:1px solid var(--line);border-left:4px solid var(--acc);background:var(--panel);
+  border-radius:6px;padding:12px 16px;margin:16px 0}
+.box.warn{border-left-color:var(--warn)} .box.bad{border-left-color:var(--bad)}
+.box.good{border-left-color:var(--good)}
+.box .t{font-weight:650;margin-bottom:4px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 18px;margin:12px 0;font-size:14.5px}
+.kv b{color:var(--mut);font-weight:500;white-space:nowrap}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;
+  padding:1px 10px;font-size:12.5px;color:var(--mut);margin-right:6px}
+footer{max-width:900px;margin:0 auto;padding:0 24px 40px;color:var(--mut);font-size:12.5px}
+.next{margin-top:48px;padding-top:14px;border-top:1px solid var(--line);font-size:14.5px}

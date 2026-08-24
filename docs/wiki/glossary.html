@@ -1,0 +1,295 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glossary · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html" class="here">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+<h1>Glossary</h1>
+<p class="lead">Every term this wiki uses, defined in a sentence or two, with a link to the page
+that explains it in depth. Reference, not prose — skim to the letter you need.</p>
+
+<div class="box"><div class="t">How to read the numbers</div>
+Where a definition carries a number it is grounded in a file under
+<code>FILES/PROJECTS/trustfake/wp1</code>. The two that recur: the CLIP probe scores
+<b>acc 0.9289 / AURC 11.83e-3</b> on the clean test slice (n = 15,316, verified from
+<code>runs/predictions/…vit_large…test_clean.npz</code>), and the EfficientNet probe scores
+<b>acc 0.8311</b> — held bit-identical while ACE collapses its ranking. See
+<a href="harness.html">the harness</a> for what each metric measures.</div>
+
+<h2>A</h2>
+
+<p><b>Abstention</b> — a moderation pipeline declining to auto-decide an image and routing it to
+a human instead. Driven by a confidence threshold: below it, review; above it, auto-act. The
+whole selective layer is a rule over abstention. See <a href="moderation.html">moderation</a>.</p>
+
+<p><b>ACE (Attack on Confidence Estimation)</b> — an adversarial attack that moves a detector's
+<i>confidence</i> without changing its <i>prediction</i>: it pushes down the confidence of correct
+answers and up the confidence of wrong ones, accepting a per-sample step only if the argmax is
+unchanged (Galil &amp; El-Yaniv, Algorithm 1). Accuracy stays fixed to 4 dp by construction while
+ranking is destroyed. See <a href="attacks.html">attacks</a>.</p>
+
+<p><b>AUGRC (area under the generalized risk-coverage curve)</b> — the weighted mean of
+<i>generalized</i> risk across operating points. Because generalized risk divides by <i>n</i>
+rather than by the accepted count, AUGRC does not blow up as coverage approaches zero, unlike AURC.
+The Traub et al. metric; implemented in <code>metrics.py</code>. See <a href="harness.html">the
+harness</a>.</p>
+
+<p><b>AURC (area under the risk-coverage curve)</b> — the weighted mean of <i>selective</i> risk
+across every operating point; lower is better. Dominated by the low-coverage tail, where the error
+estimate rests on a handful of samples. This harness averages over tie-collapsed operating points
+(<code>weights='block'</code>), which reduces to the textbook definition when all confidences are
+distinct. See <a href="harness.html">the harness</a>.</p>
+
+<p><b>AUROC (detection)</b> — area under the ROC curve for the <i>detection</i> task: does
+<code>p(fake)</code> rank fake images above real ones. This is the classifier-quality number
+(CLIP clean = 0.9801). Not to be confused with the failure-prediction AUROC — every table must say
+which one it shows. See <a href="harness.html">the harness</a>.</p>
+
+<p><b>AUROC (failure prediction)</b> — area under the ROC curve for the <i>failure</i> task: does
+confidence rank the model's correct predictions above its own mistakes. 0.5 is chance; a confidence
+attack drives it toward 0 (near-perfect inversion), which is worse than useless because the
+abstention rule then preferentially rejects the correct answers. ACE takes it 0.7703 → 0.0002.
+See <a href="attacks.html">attacks</a>.</p>
+
+<h2>B</h2>
+
+<p><b>Batch-shape non-determinism</b> — EfficientNet under cuDNN is not bit-identical across batch
+shapes, so re-running a model on the same images in a different batch flips a boundary sample and
+reads label-preservation 0.998 instead of 1.0 for reasons unrelated to the attack. The harness
+fixes this by reporting the logits from the accept-check forward pass, never a re-run. See
+<a href="epistemics.html">how experiments lie</a>.</p>
+
+<h2>C</h2>
+
+<p><b>Calibration</b> — how well a model's stated confidence matches its actual accuracy (a "90%
+confident" bin should be right 90% of the time). Central caveat of this project: for a binary
+abstention rule, calibration is <i>not</i> a defence — temperature can rescale confidence without
+changing the ranking the rule depends on. See <a href="harness.html">the harness</a> and
+<a href="epistemics.html">how experiments lie</a>.</p>
+
+<p><b>CLIP ViT-L/14 probe</b> — the stronger of the two detectors: a frozen CLIP vision transformer
+with a linear head fitted on its features (UniversalFakeDetect recipe). Clean test accuracy 0.9289,
+AURC 11.83e-3. Being a linear probe, its logit margin is small (≈13) and its AURC is
+temperature-invariant. See <a href="project.html">the project</a>.</p>
+
+<p><b>Coverage</b> — the fraction of traffic the model auto-decides at a given confidence threshold
+(<code>cov = accepted / n</code>). The other axis of the risk-coverage curve; the complement of the
+review rate. See <a href="harness.html">the harness</a> and <a href="moderation.html">moderation</a>.</p>
+
+<h2>D</h2>
+
+<p><b>Decode cache</b> — the on-disk store of decoded images (uint8 JPEG), keyed by <code>uid</code>,
+that every experiment reads from so results are reproducible and the parquet shards are touched
+once. Because it is uint8, pixels sit exactly on the <code>k/255</code> grid — which is why a
+sub-step ACE perturbation vanishes when re-saved. See <a href="dataset.html">the dataset</a>.</p>
+
+<p><b>Decode-scale threshold</b> — a model-free rule on the decoded image's dimensions (a laundered
+form of the geometry shortcut). Scores <b>0.9798</b> on the test split with no network at all —
+slightly above the width==height rule's 0.9785. Evidence that raw accuracy on SID-Set is not
+evidence of forensic capability. See <a href="dataset.html">the dataset</a>.</p>
+
+<h2>E</h2>
+
+<p><b>E-AURC (excess AURC)</b> — AURC minus the AURC of the oracle ranker on the same sample; zero
+for a perfect ranker. Isolates <i>ranking quality</i> from the base error rate — but only partly, so
+it is used as a within-model diagnostic beside AURC, never for cross-model claims (those ride on
+AUROC-failure, which is rate-free). See <a href="harness.html">the harness</a>.</p>
+
+<p><b>ECE (Expected Calibration Error)</b> — the mass-weighted gap between confidence and accuracy,
+summed over confidence bins. Reported, but treated with suspicion: it is biased upward by binning
+(a perfectly calibrated binary model reads ~0.006 at 5 bins, ~0.057 at 200), so NLL and Brier score
+are printed alongside it. See <a href="harness.html">the harness</a>.</p>
+
+<p><b>EfficientNet-B0</b> — the second, weaker detector: a small convolutional backbone with a linear
+head (clean accuracy 0.8311). It is the target of the confidence attacks because its backward pass
+is cheap and its features are cached offline. Fine-tuned into three defended arms (standard, PGD-AT,
+TRADES). See <a href="attacks.html">attacks</a> and <a href="defenses.html">defenses</a>.</p>
+
+<h2>F</h2>
+
+<p><b>Forensic epsilon</b> — the small perturbation budget (roughly 1–4/255) at which the defenses
+are trained, chosen because deepfake evidence is itself small-amplitude. The larger textbook budget
+of 8/255 <i>collapses</i> this task (the PGD-AT arm degenerates to a constant output, both accuracies
+0.4943), so the forensic regime is a requirement, not a convenience. See <a href="defenses.html">
+defenses</a>.</p>
+
+<h2>G</h2>
+
+<p><b>Generalized risk</b> — the error count among accepted samples divided by <i>n</i> (the whole
+set), as opposed to selective risk which divides by the accepted count. The quantity AUGRC
+integrates; the identity <code>R_gen = coverage × R_sel</code> holds elementwise. See
+<a href="harness.html">the harness</a>.</p>
+
+<p><b>Geometry shortcut</b> — the label leak in SID-Set: every synthetic image is a square
+1024×1024 PNG and every tampered one is square, but only 4.3% of real images are, so
+"<code>width==height → fake</code>" scores <b>0.9785</b> with no model. Our pipeline resizes to
+224×224 so it cannot read the ratio directly; a square-crop control confirms the model isn't riding
+the raw ratio — but not that it isn't riding the laundered compression signature (an open problem).
+See <a href="dataset.html">the dataset</a>.</p>
+
+<p><b>Gradient masking</b> — when a defended model <i>looks</i> robust only because the attack's
+gradient is uninformative, not because the model is actually hard to fool. Suspected here because
+ACE's effective epsilon reaches only 64% of its budget on the PGD-AT arm — a possible artefact, and
+the reason the "AT protects confidence" claim is flagged as a question for the PIs rather than a
+result. See <a href="epistemics.html">how experiments lie</a>.</p>
+
+<h2>I</h2>
+
+<p><b>img_id vs uid</b> — <code>img_id</code> is the dataset's own image id and it is <i>not</i>
+unique: 8,634 ids recur, and 19,107 collide across splits (10,000 synthetic + 9,107 tampered).
+Keying a cache on it silently merges the wrong rows. The global key is
+<code>uid = "&lt;source_split&gt;:&lt;img_id&gt;"</code>; join on <code>uid</code>, use
+<code>img_id</code> for traceability only. See <a href="dataset.html">the dataset</a>.</p>
+
+<h2>L</h2>
+
+<p><b>Label-free attack</b> — an attack that uses no ground-truth label, so a real attacker (who
+cannot see labels) can actually run it. The <i>over-confidence</i> attack (Ledda et al.) is
+label-free: it freezes the clean prediction and pushes probability mass toward it, making the model
+confidently wrong where it was quietly wrong. This is exactly ACE's practical weakness — ACE needs
+the label. See <a href="attacks.html">attacks</a>.</p>
+
+<h2>M</h2>
+
+<p><b>Margin</b> — the difference between the two class logits, <code>z1 − z0</code>. For a binary
+model, confidence is a monotone function of the absolute margin, which is why temperature (a rescale
+of the margin) cannot reorder samples. The linear probes have small margins (max ≈12–13); the
+trained checkpoints reach ≈118, which is what breaks their temperature-invariance. See
+<a href="harness.html">the harness</a>.</p>
+
+<p><b>MSP (Maximum Softmax Probability)</b> — the default confidence score <code>g(x)</code>: the
+largest class probability after softmax. For two classes <code>MSP = sigmoid(|margin| / T)</code>,
+strictly monotone in the margin — the single fact behind the temperature-invariance result. Any
+entropy or energy score can be swapped in; the harness never assumes MSP. See <a href="harness.html">
+the harness</a>.</p>
+
+<h2>N</h2>
+
+<p><b>n_op (number of operating points)</b> — the count of <i>distinct</i> confidence values, i.e.
+the number of thresholds the risk-coverage curve actually has. The guard rail: if it collapses far
+below <i>n</i>, fp16 softmax has saturated to exactly 1.0 and manufactured tie blocks, and AURC is no
+longer a property of the model but of the sort order. A saturated cell makes AURC
+temperature-dependent. See <a href="epistemics.html">how experiments lie</a>.</p>
+
+<h2>O</h2>
+
+<p><b>Operating point</b> — one achievable (coverage, risk) pair on the risk-coverage curve,
+existing only at a distinct confidence value (tie blocks collapsed). A threshold falling inside a
+tie block is never evaluated, because the set it would accept depends on the sort permutation. See
+<a href="harness.html">the harness</a>.</p>
+
+<h2>P</h2>
+
+<p><b>PGD (Projected Gradient Descent)</b> — the standard <i>prediction</i>-targeted attack:
+iterate the gradient of the loss and project back into an epsilon-ball to flip the label. Used here
+for contrast — it destroys <i>accuracy</i> (standard model → 0.0000 under PGD 2/255), the opposite
+signature to ACE, which leaves accuracy intact. See <a href="attacks.html">attacks</a>.</p>
+
+<p><b>PGD-AT (PGD adversarial training)</b> — a defense that trains on PGD-generated adversarial
+examples. At the 2/255 forensic budget it holds accuracy under attack (0.7192 vs the standard
+model's 0.0000); at 8/255 it collapses to a constant output. One of the three defended arms. See
+<a href="defenses.html">defenses</a>.</p>
+
+<p><b>Prediction- vs confidence-targeted</b> — the two orthogonal failure modes. A
+prediction-targeted attack (PGD) or a realistic corruption (JPEG, downscale) destroys
+<i>accuracy</i> while ranking survives; a confidence-targeted attack (ACE, over-confidence) leaves
+accuracy identical and destroys <i>ranking</i>. Only printing accuracy beside AURC tells them apart.
+See <a href="attacks.html">attacks</a>.</p>
+
+<h2>R</h2>
+
+<p><b>Residual risk</b> — under a moderation policy, the error rate that survives among the images
+the pipeline still auto-decides (the ones it did not send to review). The deployment-facing number:
+at a 5% SLA the file-realisable ACE attack drives it to <b>33.06%</b> on the EfficientNet probe,
+while on the CLIP probe it rises only 5.46% → 7.46% because a low base error rate bounds the damage.
+See <a href="moderation.html">moderation</a>.</p>
+
+<p><b>Review rate</b> — the fraction of traffic routed to human review, <code>1 − coverage</code>.
+The cost axis of the selective layer: holding an SLA under attack pushes it from ~27% to ~50%, and
+that doubling of human workload is the price of the guarantee. See <a href="moderation.html">
+moderation</a>.</p>
+
+<p><b>Risk-coverage curve</b> — the fundamental plot of the harness: selective risk (error rate
+among accepted samples) as a function of coverage (fraction accepted), swept over the confidence
+threshold. AURC and AUGRC are areas under it. See <a href="harness.html">the harness</a>.</p>
+
+<h2>S</h2>
+
+<p><b>Selective risk</b> — the error rate <i>among the samples the model accepts</i> at a given
+threshold: <code>errors(accepted) / count(accepted)</code>. The quantity AURC integrates; it blows
+up at low coverage where the denominator vanishes. See <a href="harness.html">the harness</a>.</p>
+
+<p><b>SID-Set</b> — the dataset: real images, fully-synthetic images, and tampered (locally edited)
+images, folded to a binary real-vs-fake task for a social-media moderation pipeline. All numbers
+here are on the <b>validation slice</b> (n = 15,316) — the official test split is withheld by the
+authors. See <a href="dataset.html">the dataset</a>.</p>
+
+<p><b>SLA (Service-Level Agreement)</b> — the maximum error rate the moderation pipeline is
+contracted to hold on the images it auto-decides (e.g. 5%). The selective layer picks the confidence
+threshold that keeps selective risk under the SLA and pays for it in review rate. See
+<a href="moderation.html">moderation</a>.</p>
+
+<h2>T</h2>
+
+<p><b>Temperature scaling</b> — dividing the logits by a scalar <code>T</code> before softmax to
+recalibrate confidence, fitted on a held-out calibration split and frozen. Because MSP is monotone
+in the margin, temperature cannot reorder a binary model, so AURC is exactly T-invariant <i>on the
+linear probes</i> (verified bit-identical for T ≥ 0.5). It is <i>not</i> invariant on the trained
+checkpoints, whose large margins let saturation move the ranking — a corrected claim. See
+<a href="epistemics.html">how experiments lie</a>.</p>
+
+<p><b>Threat model (tensor vs file)</b> — who the attacker is. A <i>tensor</i>-access attacker can
+perturb the decoded image in memory; an ACE perturbation of 0.10–0.45 grey levels (below one 8-bit
+step) works for them. A <i>file</i>-access attacker can only upload a PNG/JPEG, so the perturbation
+must survive uint8 quantisation — the realisable moderation threat model. Every attack row must say
+which it assumes. See <a href="attacks.html">attacks</a> and <a href="moderation.html">moderation</a>.</p>
+
+<p><b>TRADES</b> — a defense that trades clean accuracy against robustness via a regularizer pulling
+adversarial and clean predictions together. One of the three defended arms; at 2/255 it holds under
+attack (0.7062) but starts from a lower clean accuracy (0.7877) than PGD-AT. See
+<a href="defenses.html">defenses</a>.</p>
+
+<p><b>TRAIL Factory brick</b> — the project's framing of WP1's deliverable as a reusable component:
+a data-agnostic scoring "brick" other work packages plug into. Grounded in the code — <code>metrics.py</code>
+consumes only plain arrays <code>(scores, labels)</code>, never a dataset or a model, so a second
+dataset is a data adapter rather than a rebuild. See <a href="harness.html">the harness</a>.</p>
+
+<p><b>TReC 2026</b> — the research camp this work is built for (Lausanne, 24 Aug – 4 Sep 2026; final
+talk 4 Sep), on trustworthy AI and robustness. PIs: Sournac and Ben Jmaa. See <a href="project.html">
+the project</a> and <a href="pathways.html">to 4 Sep</a>.</p>
+
+<h2>U</h2>
+
+<p><b>uid</b> — see <b>img_id vs uid</b> above.</p>
+
+<p><b>uint8 quantisation</b> — rounding a perturbed image back to the 8-bit pixel grid (<code>round(x
+× 255) / 255</code>) that any saved file must live on. It is what separates the two threat models:
+sub-step ACE perturbations are erased outright by it (the control, eps=0.0005, vanishes), while at
+eps 0.002–0.005 a quarter of images keep a full grey level and the attack survives. See
+<a href="attacks.html">attacks</a>.</p>
+
+<h2>W</h2>
+
+<p><b>WP1–WP4</b> — the project's work packages. <b>WP1</b> is this evaluation harness
+(metrics, risk-coverage, attacks-as-conditions). <b>WP2/WP3</b> hand over prediction arrays from
+attacked or robustly-trained models. <b>WP4</b> is the selective-moderation layer (SLA, residual
+risk, review rate). They interoperate only through the npz prediction contract, so no work package
+reads another's code. See <a href="project.html">the project</a>.</p>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

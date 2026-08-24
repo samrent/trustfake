@@ -1,0 +1,275 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How experiments lie · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html" class="here">How experiments lie</a>
+<a href="implications.html">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+
+<h1>How experiments lie</h1>
+<p class="lead">Every number in this project had a way to be wrong that would not have thrown an
+error. This page is the catalogue: each lie, the real instance of it that happened here, and the
+check that now stands where it happened.</p>
+
+<div class="box"><div class="t">The one idea on this page</div>
+A measurement pipeline does not fail loudly. It returns a plausible number computed the wrong way,
+and the number ends up on a slide. The defence is not "be careful" — it is to <b>name each specific
+way a number here could lie, and stand a check on that exact spot</b>. The harness
+(<code>src/verify.py</code> plus a 19-test suite) is precisely that: a list of named lies, each with
+a guard. And even so, an adversarial re-audit that recomputed every number from the raw prediction
+files found <b>nine more</b> the automated checks never saw — including a passing test whose fixture
+was too weak to exercise the very bound it claimed. Automation catches the lies you have already met.
+The audit is for the ones you haven't.</p>
+</div>
+
+<h2>Two layers that run before anyone believes a table</h2>
+
+<p>Nothing on the <a href="harness.html">harness page</a> is trusted until two things pass. Neither
+touches the GPU; both run in seconds.</p>
+
+<div class="kv">
+<b>src/verify.py</b><span>Artifact self-consistency. Walks every <code>runs/predictions/*.npz</code>
+and its JSON sidecar and asserts they agree with the manifest, with each other, and with git. Exit
+non-zero on any mismatch, so it sits in the pre-flight. Its docstring opens: "run it before you
+believe any table."</span>
+<b>19-test suite</b><span>9 metric-invariant tests (<code>tests/test_metrics.py</code>) + 10
+attack-property tests (<code>tests/test_attacks.py</code>). No GPU, no data, no network. Claimed
+&lt;2 s; measured 2.48 s in pytest.</span>
+</div>
+
+<p>The interesting thing about <code>verify.py</code> is that its docstring is a confession. It lists
+four defects that "actually happened in this repo, silently, and were caught by a reviewer rather
+than by the code." Each bullet below is now a check. That is the whole method: a lie is only defended
+once it has been told.</p>
+
+<table>
+<thead><tr><th>The named lie</th><th>The real instance</th><th>The guard now standing there</th></tr></thead>
+<tbody>
+<tr><td>A partial run overwrites a full one</td><td>A <code>--limit 512</code> run wrote 512 rows over
+the 15,316-row clean baseline. Every delta measured against it was meaningless; nothing errored.</td>
+<td><code>n</code> and the per-split <b>uid sequence</b> must match the manifest split, or fail.</td></tr>
+<tr><td>A sidecar claims a budget the run never spent</td><td>A checkpoint sidecar claimed a 12-epoch /
+5,676-step budget for a run whose history stops at epoch 7.</td><td>Checkpoint metadata fields are
+required; missing/blank fields fail.</td></tr>
+<tr><td>Batch-shape non-determinism moves a headline</td><td>The clean row was regenerated at batch 16
+while the attacked rows were at batch 32. cuDNN is not bit-identical across batch shapes, so accuracy
+moved by <b>one sample in 15,316</b> — enough to break a headline that reads "accuracy identical across
+every row."</td><td>All rows for one model/split must carry the same recorded <code>batch</code>, or
+fail.</td></tr>
+<tr><td>A typo becomes a fabricated experiment</td><td>A mistyped condition string parsed as a
+<code>realistic</code> row carrying a fabricated <code>eps</code> of 0.</td><td>Every condition must
+round-trip through <code>parse_condition()</code>, or fail.</td></tr>
+</tbody>
+</table>
+
+<div class="box warn"><div class="t">A subtle design point in the guard itself</div>
+The uid check is on the <b>per-split uid sequence</b>, not on a hash of the whole manifest file.
+<code>manifest_v1</code> and <code>manifest_v2</code> have byte-identical <code>calib</code> and
+<code>test</code> uid sequences and differ only in <code>fit</code> — because WP3 enlarges the
+<i>training</i> set while every reported number stays on the same held-out slice. A whole-file hash
+would <i>reject exactly the comparison the project needs</i> and catch nothing real. The naive strong
+check is both too strict and useless; the right check is narrower and pointed.</p>
+</div>
+
+<h2>The case files</h2>
+
+<p>Nine ways this project's numbers could have lied, each with its real example. Some were caught by
+the two layers above. The ones marked <span class="pill">audit only</span> were not — they were found
+by a human recomputing from the <code>.npz</code>.</p>
+
+<h3>1 · Leakage — splitting on a key that isn't one</h3>
+<div class="box bad"><div class="t">The lie: your test set is in your training set, and nothing says so</div>
+The archetypal version is splitting a corpus by document when the label lives at the company level, so
+the same company appears on both sides. Here the concrete near-miss is <b><code>img_id</code></b>. It
+looks like a unique identifier. It is not: the synthetic and tampered classes are numbered
+sequentially and the counter <b>restarts per split</b>, so <b>19,107</b> img_ids appear in <i>both</i>
+train and validation — 10,000 synthetic and 9,107 tampered. Every one of the 10,000 fully-synthetic
+validation images shares its img_id with a train image. Zero reals collide.
+(<code>runs/img_id_collisions.json</code>: train 210,000 unique, validation 30,000 unique.)</p></div>
+<p><b>How it was avoided:</b> the harness splits on <code>uid</code>, the genuinely unique key.
+<code>manifest_v1</code> has uid unique, <code>fit</code> drawn only from <code>train:</code>,
+<code>calib</code> (4,684) and <code>test</code> (15,316) drawn only from <code>validation:</code>.
+Had anyone split on img_id thinking it a key, the whole result would have leaked. <span class="pill">
+audit note</span> the old README quoted <b>8,634</b> collisions — a hard-coded integer literal at
+<code>src/manifest.py:171</code> that no code ever computed. The audit recounted all 283 shards: the
+true figure is 2.2&times; larger. See <a href="dataset.html">the dataset page</a>.</p>
+
+<h3>2 · The dataset shortcut — a rule with no model that beats the model</h3>
+<div class="box bad"><div class="t">The lie: 0.93 accuracy that is really 0.93 accuracy at reading image dimensions</div>
+On this split, the rule <b>"width == height &rarr; fake"</b> — no network, no pixels — scores
+<b>0.9785</b> (<code>runs/trivial_baselines.json</code>, majority class 0.5000). It works because
+100% of synthetic and 100% of tampered images are square 1024&times;1024, and only <b>4.30%</b> of
+reals are. A detector reporting 0.83 is <i>below</i> a one-line <code>if</code> statement. Reading that
+0.83 against 0.5 instead of against 0.9785 would have told a story exactly backwards.</p></div>
+<p><b>How it is caught:</b> <code>src/baselines.py</code> computes the trivial baselines and the ACE
+condition table now prints, in bold, "read every model accuracy against 0.9785." The shortcut also
+survives into the <i>pixels</i>: a frozen threshold on the decode scale factor (1024&rarr;256 is a
+0.25 downscale for 100% of fakes, 4.0% of reals), fit on calib and applied to test, scores
+<b>0.9798</b>. Whether the detector rides that laundered residue is an <b>open problem</b> named on the
+<a href="attacks.html">attacks page</a> — the honest limit, not a solved one.</p>
+
+<h3>3 · Fitting on the split you then report</h3>
+<div class="box"><div class="t">The lie: the number is good because the knob was tuned on the same data</div>
+A temperature, an abstention threshold, a decode cut-off — tune any of them on the test set and the
+test number improves for free and generalises to nothing. The rule here: <b>fit on <code>calib</code>,
+freeze, apply to <code>test</code>.</b> The moderation temperature (1.2785) is "fitted on
+<code>..._calib_clean</code> and frozen" — stamped in the header of every condition table. The
+abstention policy is refit on each model's own clean calib at the 5% SLA, then frozen.</p></div>
+<p><b>The evidence it is honest:</b> the frozen policy's residual risk is <b>4.95% on calib</b> and
+<b>4.65% on test</b> — it generalises across the gap, which is only meaningful <i>because</i> the knob
+never saw test. See <a href="moderation.html">the moderation page</a>.</p>
+
+<h3>4 · Oracle thresholds — peeking at the labels you're scoring</h3>
+<div class="box"><div class="t">The lie: an abstention rule that quietly knows the answers</div>
+Selective-classification numbers depend on <i>where</i> the model abstains. Choose that operating point
+using the test labels — an oracle — and you report a risk no deployed system could achieve. The metrics
+module keeps the oracle only as a clearly-labelled <i>reference</i> (<code>aurc_optimal_empirical</code>,
+the empirical Bayes oracle for E-AURC), never as the operating policy. <span class="pill">audit note</span>
+the audit confirmed the oracle's gap to its closed form is exactly <code>r/(2n)</code> — i.e. the
+reference is right — and that the <i>deployed</i> threshold is the frozen-on-calib one from case 3, not
+the oracle.</p></div>
+
+<h3>5 · Batch-shape non-determinism <span class="pill">verify.py</span></h3>
+<div class="box"><div class="t">The lie: "accuracy is identical across every row" — off by one sample of floating-point weather</div>
+The headline of the confidence attack is that accuracy stays <b>bit-identical at 0.8311</b> while ranking
+is destroyed. cuDNN convolutions are not bit-identical across batch shapes, so regenerating the clean row
+at a different batch size than the attacked rows moved accuracy by one sample in 15,316 — enough to make
+"identical" literally false. The margin noise floor from this effect is <b>8.31e-3</b>; only 3 of 15,316
+rows come back bit-identical.</p></div>
+<p><b>The guard:</b> <code>verify.py</code> requires every row for a given model and split to record the
+same <code>batch</code>, and fails otherwise. The fix is procedural, not statistical: regenerate every row
+at one batch size so "identical" is true by construction.</p>
+
+<h3>6 · The namespace collision that made a 512-row file <span class="pill">verify.py</span></h3>
+<div class="box"><div class="t">The lie: a debug run silently becomes the baseline</div>
+A quick <code>--limit 512</code> run wrote its output to the same path as the full clean baseline and
+overwrote it. Now the "15,316-row" baseline held 512 rows, and every attack delta measured against it was
+against the wrong denominator. Nothing errored — the file was valid, just short.</p></div>
+<p><b>The guard:</b> the sidecar declares <code>n</code> and a uid-sequence hash; <code>verify.py</code>
+checks both against the manifest split and fails on <code>n=512</code> where the split declares 15,316.
+This is the check whose absence caused the bug, added after it was found by eye.</p>
+
+<h3>7 · A theoretical bound that was FALSE where it mattered <span class="pill">audit only</span></h3>
+<div class="box bad"><div class="t">The lie: a passing test, on a fixture too weak to exercise its own claim</div>
+WP1's headline theorem is real: for a binary head, <code>MSP = &sigma;(|margin|/T)</code> is strictly
+monotone in the margin, so temperature scaling cannot reorder samples and <b>cannot move AURC, AUGRC or
+AUROC(failure)</b>. Test 8 asserts exactly this and passes. Test 9 ships the bound: "exact in float64
+down to T = 0.5; breaks near T &asymp; 0.2 when the softmax saturates." Both green. Both computed on a
+fixture with <code>rng.normal(0, 2.5)</code> — margins up to ~15.</p></div>
+<p>The trained checkpoints produce margins up to <b>118.6</b>. There, float64 saturates the softmax far
+earlier, and the "invariant" quantity moves. Recomputed from
+<code>predictions_effb0_standard_..._overconf_..._s20.npz</code> (verified for this page, CPU-only):</p>
+
+<table>
+<thead><tr><th>temperature T</th><th class="num">AURC &times;10⁻³</th><th class="num">AUROC(fail)</th>
+<th class="num">operating points</th></tr></thead>
+<tbody>
+<tr><td>100</td><td class="num">194.30</td><td class="num">0.4135</td><td class="num">15,255</td></tr>
+<tr><td>3.338 (the fitted, reported T)</td><td class="num">194.25</td><td class="num">0.4135</td><td class="num">12,661</td></tr>
+<tr><td>2.0</td><td class="num">156.54</td><td class="num">0.4999</td><td class="num">30</td></tr>
+<tr><td>1.0</td><td class="num">156.50</td><td class="num">0.5000</td><td class="num">1</td></tr>
+</tbody>
+</table>
+
+<p>AURC moves <b>37.8e-3</b> — 9&times; the ~4e-3 the bound promised — the break is at T&asymp;2.5, an
+order of magnitude above the stated T&asymp;0.2, and <i>inside</i> the range declared exact. On the linear
+probes (max margin ~13) the invariance is genuinely bit-exact: AURC spread over T &isin; {0.5, 1, 2, 5,
+10} is <b>exactly 0.0</b> (verified). So the theorem is true; the numerical bound was calibrated to the
+wrong margins. <b>The tell that catches it is <code>n_op</code></b> — the count of distinct operating
+points. At the reported T that cell already shows 12,661 of 15,316: the confidences are collapsing, and
+any cell with <code>n_op &lt; n</code> is in the degraded regime where AURC depends on T. The corrected
+claim now says exactly that. See <a href="harness.html">the harness page</a> for the invariant, stated
+with its real limit.</p>
+
+<h3>8 · An under-optimised attack reading as robustness <span class="pill">audit only</span></h3>
+<div class="box warn"><div class="t">The lie: the defence held because the attack was weak, not because the defence was strong</div>
+"Adversarial training also protects <i>confidence</i>" rests on one epsilon of the over-confidence attack:
+PGD-AT's AUROC(failure) goes 0.8006 &rarr; 0.7770 and TRADES 0.7761 &rarr; 0.7789 (it goes <i>up</i> — an
+attack that improves the defender's failure-detection has not been shown to be at full strength). Three
+warning signs: (a) TRADES improves under attack; (b) a 4&times; smaller budget — <code>ace_uint8</code> at
+~0.96 grey levels — does 5&times; more damage (drops AUROC(fail) 0.135 on PGD-AT); (c) the attack's
+effective epsilon on PGD-AT is only <b>2.565 of 4.0 grey levels — 64% of budget</b> with
+<code>frac_perturbed = 1.0</code>. An attack that fails to fill its own ball while touching every pixel is
+the textbook signature of gradient masking.</p></div>
+<p><b>Status:</b> this is now written as a <b>question for the PIs, not a result</b>. The under-confidence
+arm was never run; the attack is a fixed 20-step single-restart descent. Presenting a defence as proven on
+a possibly-masked attack is the kind of claim an adversarial-robustness reviewer takes apart in the room.
+See <a href="defenses.html">the defenses page</a>.</p>
+
+<h3>9 · Printing AURC without the accuracy beside it</h3>
+<div class="box"><div class="t">The lie: one number, two failure modes, and no way to tell which fired</div>
+Accuracy and ranking fail independently. An abstention metric printed alone hides which one broke.</p></div>
+<table>
+<thead><tr><th>condition</th><th class="num">accuracy</th><th class="num">AUROC(fail)</th>
+<th class="num">AURC &times;10⁻³</th><th>what actually failed</th></tr></thead>
+<tbody>
+<tr><td>clean</td><td class="num">0.8311</td><td class="num">0.7703</td><td class="num">67.05</td><td>—</td></tr>
+<tr><td>ACE (confidence attack)</td><td class="num">0.8311</td><td class="num">0.0002</td><td class="num">469.14</td>
+<td>ranking destroyed, <b>accuracy untouched</b></td></tr>
+<tr><td>downscale 0.5 (realistic)</td><td class="num">0.6762</td><td class="num">0.7013</td><td class="num">182.94</td>
+<td><b>accuracy destroyed</b>, ranking survives</td></tr>
+</tbody>
+</table>
+<p>(<code>runs/condition_table_ace.md</code>, <code>condition_table_realistic.md</code>.) If you print
+only AURC, the ACE row and the downscale row both look "bad" and you cannot see that one is a stealthy
+confidence attack holding accuracy fixed and the other is honest degradation. The rule: <b>every table
+prints accuracy, AUROC(failure), AURC and <code>n_op</code> together.</b> The audit's sharpest finding was
+that the README's own eight summary tables had dropped <code>n_op</code> — the one column that would have
+caught case 7.</p>
+
+<h2>Why the audit still mattered after everything was green</h2>
+
+<p><code>verify.py</code> exits 0 (with four honest warnings about pre-dated CLIP feature sidecars). All
+19 tests pass. And yet five independent audit passes — each recomputing every number from the
+<code>.npz</code> in float64, CPU only, told to "assume the author is capable and wrong somewhere" — logged
+<b>44 failing checks</b> across five families. The nine ranked by blast radius:</p>
+
+<table>
+<thead><tr><th class="num">#</th><th>the correction</th><th>file</th></tr></thead>
+<tbody>
+<tr><td class="num">1.1</td><td>Temperature bound false on the checkpoints (case 7)</td><td>runs/d3_standard_eps2_255.md</td></tr>
+<tr><td class="num">1.2</td><td>img_id collisions 8,634 &rarr; 19,107, and never computed (case 1)</td><td>src/manifest.py:171</td></tr>
+<tr><td class="num">1.3</td><td>Geometry control is a no-op on 100% of fakes; proves the model can't read aspect ratio, not that it isn't riding the shortcut</td><td>src/baselines.py</td></tr>
+<tr><td class="num">1.4</td><td>The two-numeric-paths comparison describes a full-split run that was replaced by a 4,000-row subsample</td><td>predictions_vit_l14_e2e_*</td></tr>
+<tr><td class="num">1.5</td><td>Two moderation cells scored against superseded predictions (13.01 &rarr; 12.97)</td><td>runs/d4_*.json</td></tr>
+<tr><td class="num">1.6</td><td>"only attack that drives coverage up" refuted by a row two paragraphs above</td><td>README (D4)</td></tr>
+<tr><td class="num">1.7</td><td>"rounding erases the perturbation" true for 1 of 3 epsilons; per-sample max, not mean, decides survival</td><td>runs/condition_table_threatmodel.md</td></tr>
+<tr><td class="num">1.8</td><td>Permutation-spread constant 5.6e-3 &rarr; 1.6e-2 on the repo's own fixture</td><td>src/metrics.py:23</td></tr>
+<tr><td class="num">1.9</td><td>Throughput, attack count, "square rate ~5%", and <code>n_op</code> missing from all eight tables — a page of free hits</td><td>various</td></tr>
+</tbody>
+</table>
+
+<div class="box good"><div class="t">The one that indicts the automation itself</div>
+Case 7 was a <i>passing test</i>. <code>verify.py</code>'s docstring even names the epoch-7/12-epoch
+sidecar lie as "already caught" — yet the audit found that exact sidecar (<code>phase1_init.json</code>,
+claiming 5,676 steps and 12 epochs for a run that stops at epoch 7) still sitting on disk. Naming a lie in
+a comment is not the same as having a check that fails on it. A green suite proves the lies you encoded are
+absent. It says nothing about the ones you haven't met yet — which is the entire job of the audit.</p>
+</div>
+
+<h2>The ritual, in one paragraph</h2>
+<p>Recompute every number from the raw predictions, never from a previous table. Fit knobs on
+<code>calib</code>, freeze them, apply to <code>test</code>. Print accuracy, AUROC(failure), AURC and
+<code>n_op</code> in the same row, always. Carry the provenance line ("SID-Set validation slice, official
+test withheld") under every table. Split on the key that is actually unique. Read accuracy against the
+trivial baseline, not against chance. State each limit as plainly as each result. And keep one adversary
+in the loop whose only instruction is: the author is capable, and wrong somewhere.</p>
+
+<div class="next">&rarr; Next: <a href="pathways.html">To 4 Sep</a></div>
+
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>

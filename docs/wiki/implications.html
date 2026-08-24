@@ -1,0 +1,198 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Implications · TrustFake wiki</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<nav>
+<a href="index.html">Overview</a>
+<a href="project.html">The project</a>
+<a href="harness.html">The harness</a>
+<a href="dataset.html">The dataset</a>
+<a href="attacks.html">Attacks</a>
+<a href="defenses.html">Defenses</a>
+<a href="moderation.html">Moderation</a>
+<a href="epistemics.html">How experiments lie</a>
+<a href="implications.html" class="here">Implications</a>
+<a href="pathways.html">To 4 Sep</a>
+<a href="glossary.html">Glossary</a>
+<a href="dashboard.html">Dashboard</a>
+</nav>
+<main>
+<h1>Implications — what all of this actually means</h1>
+<p class="lead">The other pages report what was measured. This one asks the harder question: given
+those numbers, what follows — for the science, for anyone deploying a moderation pipeline, for the
+benchmark, and for the person carrying this to Lausanne. Every claim here is downstream of a number
+with a file behind it.</p>
+
+<div class="box">
+<div class="t">The one sentence, if you read nothing else</div>
+A deepfake moderation pipeline that trusts model confidence has a failure mode that <b>no accuracy
+metric can see</b>: an attacker who moves confidence without moving the label turns the safety
+mechanism — abstention — into the attack surface. We measured it, priced it, priced the fix, and
+found the fix costs moderator hours rather than accuracy.
+</div>
+
+<h2>1 · Scientific implications</h2>
+
+<h3>Detection and trust are two different problems, and the field routinely conflates them</h3>
+<p>The sharpest result on the <a href="attacks.html">attacks page</a> is that two attacks break the
+system in <b>orthogonal</b> ways. A realistic corruption (JPEG q30, 0.5× downscale) destroys
+<i>accuracy</i> — 0.8311 → 0.68 — while confidence ranking survives. The confidence attack (ACE)
+leaves accuracy <b>bit-identical</b> and destroys <i>ranking</i> — failure-AUROC 0.7703 → 0.0002.</p>
+<p>The implication is methodological and it is not cosmetic: a single "robustness" number is
+meaningless, because a model can be robust on one axis and catastrophically fragile on the other.
+Any evaluation that does not print <b>accuracy beside a ranking metric</b> (AURC, failure-AUROC)
+cannot distinguish these, and the whole point of the moderation setting is that the second failure
+is the dangerous one. This is why <code>src/metrics.py</code> refuses to score one without the other.</p>
+
+<h3>Calibration is provably not a defence for an abstention rule — and that lands on the PIs' turf</h3>
+<p>For a binary model, maximum-softmax confidence is <code>σ(|margin|/T)</code>, monotone in the
+logit margin, so temperature scaling <b>cannot reorder samples</b>. On the linear probes this is
+exact: AURC is bit-identical at T ∈ {0.5, 1, 2, 5, 10}. It is a <i>proof</i>, asserted as a test, not
+a citation. (On the trained checkpoints the <i>representation</i> saturates and the guarantee is
+about ordering only — the correction dissected on <a href="epistemics.html">the epistemics page</a>.)</p>
+<div class="box">
+<div class="t">Why this is the strategically important result</div>
+The PIs' own research area is evidential / Dirichlet <b>uncertainty</b>. This project proves that the
+cheap, standard fix — calibrate the softmax — <b>cannot</b> help a confidence-based abstention rule.
+That is exactly the gap a genuine uncertainty estimate is meant to fill. Arriving with the proof that
+the naïve baseline fails is arriving with the <b>motivation for their method</b>, quantified — a far
+stronger position than arriving with a half-built copy of their method.
+</div>
+
+<h3>Accuracy is defence-in-depth for selective moderation — the most useful non-obvious finding</h3>
+<p>The confidence attack collapses ranking on <i>both</i> detectors. On CLIP ViT-L/14, failure-AUROC
+falls 0.8779 → 0.1812 under the realisable attack — a <b>relatively worse</b> collapse than
+EfficientNet's. Yet through the moderation layer the outcomes diverge sharply:</p>
+<table>
+<tr><th>under realisable ACE (1 grey level)</th><th class="num">EfficientNet-B0</th><th class="num">CLIP ViT-L/14</th></tr>
+<tr><td>clean residual risk (5% SLA)</td><td class="num">4.65%</td><td class="num">5.46%</td></tr>
+<tr><td>residual risk under attack</td><td class="num">33.06%</td><td class="num">7.46%</td></tr>
+<tr><td>clean error rate (the ceiling)</td><td class="num">16.9%</td><td class="num">~6.8%</td></tr>
+</table>
+<p>Residual risk is <b>bounded by the underlying error rate</b>: you cannot ship more wrong
+auto-decisions than the model gets wrong. CLIP has so few errors to mis-rank that even with its
+confidence fully attacked and 91% of traffic auto-decided, the damage is capped near 7%. The
+implication is genuinely useful and rarely stated: <b>a better base detector is itself a confidence
+defence</b>, even when its confidence signal is worthless under attack. Investing in raw accuracy and
+investing in confidence robustness are not separate budgets — the first partially buys the second.
+Source: <code>runs/moderation_clip.md</code>, <code>runs/moderation_threatmodel.md</code>.</p>
+
+<h3>Robustness budgets do not transfer from object recognition to forensics</h3>
+<p>Adversarial training at the standard ImageNet budget (8/255) <b>collapses this task to constant
+output</b> — both clean and robust accuracy pinned at the majority-class rate. At the forensic budget
+2/255 the same code trains fine. The reason (detailed on <a href="defenses.html">defenses</a>) is that
+deepfake evidence is small-amplitude, high-frequency residue, and an 8/255 ball is wide enough to
+erase it. The implication for the field: robustness results on forensic detectors reported at
+object-recognition epsilons may be measuring collapse rather than defence, and forensic robustness
+must be reported at forensic epsilons with the budget stated on every row.</p>
+
+<h2>2 · Deployment implications — for anyone running a moderation pipeline</h2>
+
+<div class="box bad">
+<div class="t">Your accuracy dashboard is blind to the attack that matters</div>
+Under the confidence attack, accuracy is <b>0.8311 before and after, to four decimals</b>. Every
+accuracy-based monitor, canary and regression test reads green while the residual risk of the
+auto-decisions goes 4.65% → 33.06%. Monitoring must watch a <b>ranking</b> quantity — failure-AUROC,
+or residual-risk-at-fixed-coverage — not accuracy. This is the single most important operational
+takeaway.
+</div>
+
+<h3>"Escalate on uncertainty" fails against an adversary who removes uncertainty</h3>
+<p>The intuitive moderation design — auto-decide the confident cases, send the uncertain ones to a
+human — assumes the model is <i>honestly</i> uncertain when it is wrong. The <b>label-free
+over-confidence attack</b> breaks exactly that assumption: it needs no ground-truth labels (so a real
+attacker can run it) and it drives coverage <b>up</b>, to 100% on the undefended model. It does not
+trigger human review — it <i>suppresses</i> it, by making the model confidently wrong. An abstention
+policy is only as trustworthy as the confidence signal it reads, and that signal is attackable.</p>
+
+<h3>Robustness is bought in moderator-hours, and that is a budget line</h3>
+<p>Adversarial training restores the moderation SLA — residual risk under a label attack goes
+100% → 13% — but the price is the <b>review rate roughly doubling, 27% → 50%</b>. That is not an
+accuracy cost; it is a staffing cost. Twice as many images land in the human queue. The honest way to
+present a robustness gain in this setting is with its review-rate price in the same sentence, because
+a moderation team pays it in headcount. Source: <code>runs/d4_*.json</code>.</p>
+
+<h3>The SLA is a choice, not a fact</h3>
+<p>Every number here is anchored to a 5% residual-risk target chosen for the demonstration. A real
+platform sets it from the cost of a wrong auto-decision against the size of its review team. Change
+the SLA and every coverage, review-rate and threshold moves. The pipeline exposes it as a parameter
+and stamps it into the artifact for exactly this reason — see <a href="moderation.html">moderation</a>.</p>
+
+<h2>3 · Benchmark implications — what a SID-Set number is worth</h2>
+<p>A one-line rule with no model — <code>width == height → fake</code> — scores <b>0.9785</b> on the
+test split, above every trained detector measured here. Label 1 is 100% square 1024×1024 PNG, label 2
+100% square, only 4.3% of reals square. The implication is uncomfortable: <b>a reported SID-Set
+accuracy near 0.98 is not evidence of forensic capability</b> until it is read against 0.9785, not
+against chance — and a leaderboard that reads it against 0.5 is ranking models on how well they
+absorbed a metadata artifact. Benchmark hygiene here means publishing the no-model floor beside every
+model number, which <code>src/baselines.py</code> now does.</p>
+<div class="box warn">
+<div class="t">And the control could not fully clear our own model</div>
+Cropping every image square (so aspect ratio carries no label information) left CLIP's accuracy
+unchanged — 0.9289 → 0.9291 — which proves the model <b>cannot read aspect ratio</b>. It does
+<b>not</b> prove the model is not riding the <i>laundered</i> version of the shortcut: the cache
+re-encodes to JPEG q95, turning PNG-vs-JPEG provenance into a compression trace, and a frozen
+threshold on the decode scale factor still scores 0.9798. Whether the probe rides that residue is an
+<b>open question</b> with a named settling experiment (one identical JPEG pass over every image). The
+broader implication: forensic benchmarks need format- and compression-matched evaluation subsets, or
+the whole field risks measuring provenance and calling it forensics. See <a href="dataset.html">the
+dataset page</a>.
+</div>
+
+<h2>4 · Strategic implications — for the camp and the person holding WP1+WP4</h2>
+
+<h3>Whoever owns the measurement owns the conversation</h3>
+<p>The npz contract (<code>uid / y / logits / condition</code>) lets an attacked or robustly-trained
+model be scored <b>without touching its code</b>. Published on Day 1, it makes this harness the point
+every subgroup's model flows through — WP2's attacks, WP3's checkpoints, the uncertainty heads. That
+is not a tooling convenience; it is positional. The person who defines how the camp measures
+robustness sets the terms of every later comparison. Published on Day 4, everyone has already invented
+their own format and the leverage is gone.</p>
+
+<h3>The honest-limitations posture is the credibility, not a weakness</h3>
+<p>An adversarial audit of this project's own write-up found roughly ten overclaims — including a
+theoretical bound that was <b>false on the trained checkpoints</b> — and each was corrected against
+the artifacts (<a href="epistemics.html">epistemics</a>). Walking into a room of robustness
+researchers with the corrections <i>visible</i> — "here is what we claimed, here is the number that
+broke it, here is the fixed claim" — is precisely the behaviour that room respects. The two live
+open questions (does the model ride the compression shortcut; does adversarial training really protect
+confidence) are framed as <b>questions for the PIs</b>, not swept up. In a trustworthy-AI camp,
+demonstrated epistemic hygiene is the deliverable behind the deliverables.</p>
+
+<h3>The uncertainty (σ) seam is the highest-leverage unbuilt thing</h3>
+<p>The PIs' decision diagram routes on a per-image uncertainty score σ produced by methods
+<i>other</i> people build (MC-Dropout, deep ensembles, evidential heads). The current contract carries
+logits only — there is no σ slot. Extending it, and publishing the extension on Day 1, is what turns
+"a harness that scores my two detectors" into "the harness every uncertainty method in the camp is
+evaluated in." It is spelled out on <a href="pathways.html">the pathways page</a>; it is the one
+contract change worth making before anyone writes a training loop.</p>
+
+<h2>5 · What is <em>not</em> implied — the guardrails</h2>
+<p>Equally important: the claims this project cannot yet make, so none of them are made by accident.</p>
+<div class="kv">
+<b>Not "AT protects confidence."</b><span>The encouraging reading of the defense results rests on a
+<b>single, under-optimised</b> attack (effective ε only ~64% of budget on PGD-AT — a possible
+gradient-masking signature), and the under-confidence arm was never run. This is a question for the
+PIs, not a refutation of the Ledda hypothesis.</span>
+<b>Not "our detector is clean of the shortcut."</b><span>The geometry control rules out aspect ratio,
+not the laundered compression trace. Open until the format-matched subset is run.</span>
+<b>Not "SID-Set test results."</b><span>Every number is the SID-Set <b>validation</b> slice; the
+official test split is withheld by the dataset authors. Never present these as test-set numbers.</span>
+<b>Not the 98% figure as the deployable threat.</b><span>The float32 ACE result (98% residual risk)
+needs post-decode <b>tensor</b> access. The <b>33.06%</b> figure — one grey level, survivable in a
+saved file — is the one an attacker can actually produce, and the one to lead with.</span>
+</div>
+
+<h2>License implication</h2>
+<p>The harness is released under the <b>PolyForm Noncommercial License 1.0.0</b> (<code>LICENSE.md</code>):
+free for research, education, public institutions and any noncommercial purpose; commercial use needs a
+separate licence. One thing to confirm before presenting it as a TRAIL Factory brick — this is
+<b>source-available, not OSI-open-source</b>, so "open artifact" here means freely usable by the camp
+and for research, not OSI-open. If TRAIL requires an OSI licence for a brick, that is a conversation to
+have on Day 1, not on 4 September.</p>
+
+<div class="next">→ Next: <a href="pathways.html">To 4 Sep</a> — the critical path, the σ seam, and tonight's checklist.</div>
+</main>
+<footer>TrustFake · TReC 2026 · private wiki, generated 23 Aug 2026 · sources under
+FILES/PROJECTS/trustfake/wp1</footer>
+</body></html>
