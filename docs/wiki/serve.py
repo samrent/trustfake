@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Static server for the TrustFake wiki + experiment dashboard. Offline, stdlib only.
 
-Binds 0.0.0.0:8472 so the pages are reachable BOTH at http://127.0.0.1:8472 (local browser
-pane) AND across the Tailscale tailnet at http://<this-host>:8472 from your phone or laptop.
+Binds 0.0.0.0:8791 so the pages are reachable BOTH at http://127.0.0.1:8791 (local browser
+pane) AND across the Tailscale tailnet at http://<this-host>:8791 from your phone or laptop.
 0.0.0.0 also exposes it on the local LAN interface; on a trusted home network that is fine,
 but if you want tailnet-ONLY, pass the tailnet IP as the first argument:
 
@@ -14,7 +14,7 @@ one if you ever put this on an untrusted network.
 import http.server, socketserver, pathlib, functools, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
-PORT = 8472
+PORT = 8791
 HOST = sys.argv[1] if len(sys.argv) > 1 else "0.0.0.0"
 
 class Handler(http.server.SimpleHTTPRequestHandler):
