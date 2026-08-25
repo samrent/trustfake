@@ -58,8 +58,17 @@ def actions(p_fake: np.ndarray, t_low: float, t_high: float,
     of p(fake) -- ALLOW = confident real AND certain; FLAG = confident fake AND certain.
 
     With sigma=None this is exactly the one-axis rule, so every existing call is unchanged.
-    The uncertainty gate only ever MOVES items into REVIEW; it never auto-decides, so it
-    cannot increase residual risk, only trade coverage for safety."""
+    The uncertainty gate only ever MOVES items into REVIEW and never auto-decides, so the
+    COUNT of wrong auto-decisions can only fall -- and with it missed_fake_rate and
+    false_flag_rate, whose denominators are fixed class sizes.
+
+    residual_risk is NOT among those guarantees. It divides by a shrinking denominator, so a
+    gate that escalates decisions which were CORRECT raises the rate while shipping strictly
+    less harm. Counterexample: 90 reals correctly auto-allowed + 10 reals wrongly auto-flagged
+    is 10/100 = 10.0%; gate 20 of the correct ones into review and the same 10 errors sit in a
+    denominator of 80, i.e. 12.5%. Read residual_risk beside coverage, never alone.
+    (This docstring previously claimed the gate could not increase residual risk. It was
+    wrong; the framework port carries the corrected wording.)"""
     p = np.asarray(p_fake, dtype=np.float64)
     out = np.full(p.shape, REVIEW, dtype=np.int8)
     out[p < t_low] = ALLOW
