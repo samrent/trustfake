@@ -215,13 +215,26 @@ def main() -> None:
     print(f"sweep strategy {a.strategy}: {len(cfgs)} config(s), limit_fit={cfgs[0]['limit_fit']}, "
           f"epochs={cfgs[0]['epochs']}", flush=True)
     if not a.rank_only:
+        import time
         for i, cfg in enumerate(cfgs, 1):
             print(f"--- [{i}/{len(cfgs)}] {cfg['run_name']} ({cfg['method']}) ---", flush=True)
-            try:                                    # one bad config must not kill an overnight run
-                train_config(cfg)
-                eval_config(cfg)
-            except Exception as e:
-                print(f"### CONFIG FAILED: {cfg['run_name']}: {type(e).__name__}: {e}", flush=True)
+            # Retry on transient CUDA/cuDNN faults: this box intermittently throws
+            # CUDNN_STATUS_EXECUTION_FAILED mid-run, and once one subprocess faults the next
+            # can inherit a bad device state until the GPU recovers. Sleep and retry lets the
+            # sweep self-heal instead of losing 15 configs to a hiccup. Idempotent skips mean a
+            # retry never redoes finished work.
+            for attempt in range(1, 4):
+                try:
+                    train_config(cfg)
+                    eval_config(cfg)
+                    break
+                except Exception as e:
+                    print(f"### attempt {attempt}/3 failed: {cfg['run_name']}: "
+                          f"{type(e).__name__}: {str(e)[:120]}", flush=True)
+                    if attempt < 3:
+                        time.sleep(20)              # let the GPU/driver recover
+                    else:
+                        print(f"### CONFIG GIVEN UP: {cfg['run_name']}", flush=True)
     rank(cfgs, a.clean_floor, ROOT / "runs" / "sweep_ranking.md")
 
 
